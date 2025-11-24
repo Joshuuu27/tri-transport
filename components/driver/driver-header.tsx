@@ -12,10 +12,10 @@ export default function Header() {
 
   const navigationLinks = [
     { label: "Home", href: "/" },
-    { label: "History", href: "/user/trip-history" },
-    { label: "QR Code Scanner", href: "/user/scanner" },
-    { label: "Report", href: "/user/report" },
-    { label: "Commend", href: "/user/Commend" },
+    { label: "History", href: "/driver/trip-history" },
+    { label: "Bookings", href: "/driver/commuter" },
+    { label: "Profile", href: "/driver/profile" },
+    { label: "Settings", href: "/driver/settings" },
   ];
 
   return (

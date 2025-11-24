@@ -12,7 +12,7 @@ export interface RegisterData {
   name: string;
   email: string;
   password: string;
-  companyName: string;
+  role: string;
 }
 
 export interface ResetPasswordRequestData {
@@ -28,6 +28,8 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  success?: boolean;
+  error?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

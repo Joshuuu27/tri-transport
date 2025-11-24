@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Mail, Lock, User, Store } from "lucide-react";
 import authService from "@/lib/services/AuthService";
 import { showToast } from "@/components/common/Toast";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { FieldSet } from "@/components/ui/field";
 
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,6 +20,7 @@ export function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [role, setRole] = useState("default");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,23 +33,46 @@ export function RegisterForm() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
 
-    const res = await authService.register({
-      name,
-      email,
-      password,
-      companyName,
-    });
+    try {
+      const res = await authService.register({
+        name,
+        email,
+        password,
+        role,
+      });
 
-    if (res?.token) {
-      // localStorage.setItem("token", res.token); // or set cookie
-      window.location.href = "/dashboard";
-    } else {
-      // alert("Invalid login");
+      if (res?.success && res?.success === true) {
+        // localStorage.setItem("token", res.token); // or set cookie
+        window.location.href = "/login";
+        showToast({
+          type: "success",
+          message: "User successfully registered.",
+          actionLabel: "Dismiss",
+        });
+        return;
+      } else {
+        showToast({
+          type: "error",
+          message: res?.error || "Registration failed. Please try again.",
+          actionLabel: "Dismiss",
+        });
+      }
+    } catch (error) {
+      // Axios error with server response
+      const message =
+        error.response?.data?.error || // your backend sends { error: "..." }
+        error.response?.data?.message || // fallback if backend sends { message: "..." }
+        error.message || // generic Axios error
+        "Registration failed";
+
+      // Show toast
       showToast({
         type: "error",
-        message: "There were errors while adding user.",
+        message,
         actionLabel: "Dismiss",
       });
+
+      console.error("Registration error:", error);
     }
   }
 
@@ -54,23 +80,35 @@ export function RegisterForm() {
     <form onSubmit={handleRegister} className="space-y-6">
       {/* Full Name Field */}
       <div className="space-y-2">
-        <Label
-          htmlFor="companyName"
-          className="text-sm font-medium text-card-foreground"
-        >
-          Company Name
-        </Label>
-        <div className="relative">
-          <Store className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            id="companyName"
-            type="text"
-            onChange={(e) => setCompanyName(e.target.value)}
-            placeholder="Enter company name"
-            className="pl-10 bg-white border-border focus:ring-2 focus:ring-ring focus:border-transparent"
-            required
-          />
-        </div>
+        <FieldSet>
+          <Label
+            htmlFor="companyName"
+            className="text-sm font-medium text-card-foreground"
+          >
+            User Role
+          </Label>
+          <div className="relative">
+            <RadioGroup
+              defaultValue="default"
+              className="flex gap-6"
+              value={role}
+              onValueChange={setRole}
+            >
+              <div className="flex items-center gap-3">
+                <RadioGroupItem value="user" id="r1" />
+                <Label htmlFor="r1">Default</Label>
+              </div>
+              <div className="flex items-center gap-3">
+                <RadioGroupItem value="driver" id="r2" />
+                <Label htmlFor="r2">Driver</Label>
+              </div>
+              <div className="flex items-center gap-3">
+                <RadioGroupItem value="admin" id="r3" />
+                <Label htmlFor="r3">Admin</Label>
+              </div>
+            </RadioGroup>
+          </div>
+        </FieldSet>
       </div>
       {/* Full Name Field */}
       <div className="space-y-2">
