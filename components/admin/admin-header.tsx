@@ -11,11 +11,11 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navigationLinks = [
-    { label: "Home", href: "/" },
-    { label: "History", href: "/user/trip-history" },
-    { label: "QR Code Scanner", href: "/user/scanner" },
-    { label: "Report", href: "/user/report" },
-    { label: "Commend", href: "/user/Commend" },
+    { label: "Driver Listing", href: "/admin/drivers" },
+    { label: "SOS Requests", href: "/admin/sos" },
+    { label: "QR Scanner", href: "/admin/qrscanner" },
+    { label: "Complaints", href: "/admin/complaints" },
+    { label: "Reports", href: "/admin/reports" },
   ];
 
   return (

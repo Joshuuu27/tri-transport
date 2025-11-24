@@ -1,40 +1,28 @@
+// /app/api/login/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { comparePassword, generateToken } from "@/lib/auth";
+import { firebaseAdmin } from "@/lib/firebase.admin";
+import { SESSION_COOKIE_NAME } from "@/constant";
+
 
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
+    const { idToken } = await req.json();
+    const expiresIn = 60 * 60 * 24 * 1000;
+    const sessionCookie = await firebaseAdmin.auth().createSessionCookie(idToken, { expiresIn });
 
-    // Find user
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-
-    // Compare password
-    const valid = await comparePassword(password, user.password);
-    if (!valid) return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-
-    // Generate token
-    const token = generateToken(user.id);
-
-    // Save token in database for session management
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { resetToken: token }, // use a dedicated field like currentToken
-    });
-
-    // Set token in HttpOnly cookie
-    const response = NextResponse.json({ data: { user, token } });
-    response.cookies.set("token", token, {
+    const res = NextResponse.json({ status: "success" });
+    
+    // ✅ set cookie on response
+    res.cookies.set(SESSION_COOKIE_NAME, sessionCookie, {
       httpOnly: true,
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
       secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24,
+      path: "/",
     });
 
-    return response;
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Failed to login" }, { status: 500 });
+    return res;
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
 }

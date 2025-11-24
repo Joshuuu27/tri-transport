@@ -1,39 +1,41 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { hashPassword, generateToken } from "@/lib/auth";
+import { adminAuth, db } from "@/lib/firebase.admin";
 
 export async function POST(req: Request) {
+  
   try {
-    const { name, email, password, companyName } = await req.json();
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return NextResponse.json({ error: "Email already in use" }, { status: 400 });
-    }
+    const cookieHeader = req.headers.get("cookie") || "";
+     const token = cookieHeader
+    .split("; ")
+    .find((c) => c.startsWith("token="))
+    ?.split("=")[1];
 
-    const hashedPassword = await hashPassword(password);
+    // if (!token) return new Response("Unauthorized", { status: 401 });
 
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        companyName,
-      },
+    const { email, password, name, role } = await req.json();
+
+    // 1. Create user in Firebase Auth
+    const userRecord = await adminAuth.createUser({
+      email,
+      password,
+      displayName: name
     });
 
-    // Generate JWT token
-    const token = generateToken(user.id);
-
-    // Optionally save the token in DB (if you want to track sessions)
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { resetToken: token }, // you can use a separate field like `currentToken` instead
+    // 2. Save extra user fields into Firestore (optional)
+    await db.collection("users").doc(userRecord.uid).set({
+      email,
+      name,
+      role,
+      createdAt: Date.now()
     });
 
-    return NextResponse.json({ data: { user, token } });
-  } catch (error) {
+     await adminAuth.setCustomUserClaims(userRecord.uid, { role });
+
+    return NextResponse.json({ success: true, uid: userRecord.uid });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to register user" }, { status: 500 });
+    return NextResponse.json({ success: false,error: error.message }, { status: 400 });
   }
 }
