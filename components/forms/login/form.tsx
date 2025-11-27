@@ -150,7 +150,7 @@ export default function LoginForm() {
 
       {/* Social Login Buttons */}
       <div className="grid gap-3">
-        {/* <Button
+        <Button
           onClick={handleSignIn}
           type="button"
           variant="outline"
@@ -175,7 +175,7 @@ export default function LoginForm() {
             />
           </svg>
           Google
-        </Button> */}
+        </Button>
         {/* <Button
           type="button"
           variant="outline"

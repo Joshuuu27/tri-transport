@@ -6,17 +6,16 @@ import { useState } from "react";
 import Link from "next/link";
 import authService from "@/lib/services/AuthService";
 import { handleLogout } from "@/lib/auth/logout";
-import { APP_NAME } from "@/constant";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navigationLinks = [
     { label: "Home", href: "/" },
-    { label: "History", href: "/driver/trip-history" },
-    { label: "Bookings", href: "/driver/commuter" },
-    { label: "Profile", href: "/driver/profile" },
-    { label: "Settings", href: "/driver/settings" },
+    { label: "Drivers", href: "/franchising/drivers" },
+    { label: "Scanner", href: "/franchising/scanner" },
+    { label: "Profile", href: "/franchising/profile" },
+    { label: "Settings", href: "/franchising/settings" },
   ];
 
   return (
@@ -26,10 +25,10 @@ export default function Header() {
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <span className="text-sm font-bold text-primary-foreground">
-                F
+                T
               </span>
             </div>
-            <h1 className="text-xl font-bold text-foreground">{APP_NAME}</h1>
+            <h1 className="text-xl font-bold text-foreground">Tri-Fare</h1>
           </div>
 
           {/* Desktop Navigation */}

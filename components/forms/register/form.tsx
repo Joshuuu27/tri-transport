@@ -90,7 +90,7 @@ export function RegisterForm() {
           <div className="relative">
             <RadioGroup
               defaultValue="default"
-              className="flex gap-6"
+              className="flex flex-col gap-6"
               value={role}
               onValueChange={setRole}
             >
@@ -103,8 +103,16 @@ export function RegisterForm() {
                 <Label htmlFor="r2">Driver</Label>
               </div>
               <div className="flex items-center gap-3">
-                <RadioGroupItem value="admin" id="r3" />
+                <RadioGroupItem value="franchising" id="r3" />
+                <Label htmlFor="r3">Franchising</Label>
+              </div>
+              <div className="flex items-center gap-3">
+                <RadioGroupItem value="admin" id="r4" />
                 <Label htmlFor="r3">Admin</Label>
+              </div>
+              <div className="flex items-center gap-3">
+                <RadioGroupItem value="police" id="r5" />
+                <Label htmlFor="r3">Police</Label>
               </div>
             </RadioGroup>
           </div>

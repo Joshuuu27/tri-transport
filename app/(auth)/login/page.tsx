@@ -16,8 +16,9 @@ export default function LoginPage() {
 
     if (role === "admin") router.push("/admin");
     if (role === "driver") router.push("/driver");
+    if (role === "franchising") router.push("/franchising");
     if (role === "user") router.push("/user");
-    
+    if (role === "police") router.push("/police");
   }, [user, role, router]);
 
   return (

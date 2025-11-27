@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "./context/AuthContext";
 import { handleLogout } from "@/lib/auth/logout";
+import { APP_NAME } from "@/constant";
 
 export default function Home() {
   const router = useRouter();
@@ -23,9 +24,9 @@ export default function Home() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-primary-foreground font-bold">T</span>
+                <span className="text-primary-foreground font-bold">F</span>
               </div>
-              <span className="font-bold text-lg">Tri-Fare</span>
+              <span className="font-bold text-lg">{APP_NAME}</span>
             </div>
 
             {/* Desktop Menu */}

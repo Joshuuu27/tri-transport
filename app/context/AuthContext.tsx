@@ -11,7 +11,7 @@ const auth = getAuth(app);
 // Define the context type
 interface AuthContextType {
   user: User | null;
-  role: "user" | "driver" | "admin" | null;
+  role: "user" | "driver" | "admin" | "franchising" | "police"| null;
 }
 
 // Create AuthContext with proper type
@@ -35,7 +35,7 @@ interface AuthContextProviderProps {
 export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState<"user" | "driver" | "admin" | null>(null);
+  const [role, setRole] = useState<"user" | "driver" | "admin" | "franchising" | "police"| null>(null);
 
   // Listen for changes in the user's sign-in state
   useEffect(() => {
@@ -45,7 +45,8 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({ childr
       if(currentUser){
         const tokenResult: IdTokenResult = await currentUser.getIdTokenResult(true);
 
-        const userRole = tokenResult.claims.role as "admin" | "driver" | "user" | undefined;
+        const userRole = tokenResult.claims.role as "admin" | "driver" | "user" | "franchising" | "police" | undefined;
+        console.log("User role from token claims:", userRole);
         setRole(userRole ?? "user");
       }  
 

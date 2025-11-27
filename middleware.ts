@@ -33,6 +33,7 @@ export async function middleware(req: NextRequest) {
   if (path.startsWith("/login")) {
     if (role === "admin") url.pathname = "/admin";
     else if (role === "driver") url.pathname = "/driver";
+    else if (role === "franchising") url.pathname = "/franchising";
     else url.pathname = "/user";
     return NextResponse.redirect(url);
   }
@@ -52,9 +53,14 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  if(path.startsWith("/franchising") && role !== "franchising") {
+    url.pathname = "/unauthorized";
+    return NextResponse.redirect(url);
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/driver/:path*", "/user/:path*", "/login"],
+  matcher: ["/admin/:path*", "/driver/:path*", "/user/:path*","/franchising/:path*", "/login"],
 };

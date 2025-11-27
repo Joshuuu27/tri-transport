@@ -13,8 +13,8 @@ export default function Header() {
 
   const navigationLinks = [
     { label: "Home", href: "/" },
-    { label: "History", href: "/driver/trip-history" },
-    { label: "Bookings", href: "/driver/commuter" },
+    { label: "SOS", href: "/driver/trip-history" },
+    { label: "Complaints", href: "/driver/commuter" },
     { label: "Profile", href: "/driver/profile" },
     { label: "Settings", href: "/driver/settings" },
   ];

@@ -6,6 +6,7 @@ import { useState } from "react";
 import Link from "next/link";
 import authService from "@/lib/services/AuthService";
 import { handleLogout } from "@/lib/auth/logout";
+import { APP_NAME } from "@/constant";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -25,10 +26,10 @@ export default function Header() {
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <span className="text-sm font-bold text-primary-foreground">
-                T
+                F
               </span>
             </div>
-            <h1 className="text-xl font-bold text-foreground">Tri-Fare</h1>
+            <h1 className="text-xl font-bold text-foreground">{APP_NAME}</h1>
           </div>
 
           {/* Desktop Navigation */}
