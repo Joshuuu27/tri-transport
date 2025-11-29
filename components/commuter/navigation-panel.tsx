@@ -58,6 +58,8 @@ export default function NavigationPanel({
           componentRestrictions: { country: "ph" },
         });
         autocompleteStart.addListener("place_changed", () => {
+          // Don't allow autocomplete to change starting point if tracking is active
+          if (isTracking) return;
           const place = autocompleteStart.getPlace();
           if (place && place.formatted_address) setStartingPoint(place.formatted_address);
           else if (place && place.name) setStartingPoint(place.name);
@@ -121,9 +123,15 @@ export default function NavigationPanel({
             ref={startInputRef}
             placeholder="From (click map or use My Location)"
             value={startingPoint}
-            onChange={(e) => setStartingPoint(e.target.value)}
+            onChange={(e) => {
+              // Don't allow changes if tracking is active
+              if (!isTracking) {
+                setStartingPoint(e.target.value);
+              }
+            }}
             onFocus={() => { if (onMapClickModeChange) onMapClickModeChange('from'); }}
             onClick={() => { if (onMapClickModeChange) onMapClickModeChange('from'); }}
+            readOnly={isTracking}
             className="flex-1 pl-4 pr-4 py-3 border-2 border-border rounded-lg"
           />
           <button
