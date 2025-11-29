@@ -8,8 +8,8 @@ interface Trip {
   from: string;
   to: string;
   date: string;
-  duration: string;
-  distance: string;
+  duration?: string;
+  distance?: string;
   status: 'completed' | 'ongoing' | 'upcoming';
 }
 

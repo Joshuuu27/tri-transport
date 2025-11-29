@@ -1,19 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, MapPin, Calendar, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import TripHistoryCard from '@/components/commuter/trip-history-card';
 import Header from '@/components/commuter/trip-history-header';
+import { getUserTrips } from '@/lib/firebase-trips';
 
 interface Trip {
   id: string;
   from: string;
   to: string;
   date: string;
-  duration: string;
-  distance: string;
+  duration?: string;
+  distance?: string;
   status: 'completed' | 'ongoing' | 'upcoming';
+  fare?: number | null;
+  startedAt?: number;
 }
 
 const SAMPLE_TRIPS: Trip[] = [
@@ -73,11 +76,46 @@ const SAMPLE_TRIPS: Trip[] = [
   },
 ];
 
-
 export default function HistoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [trips, setTrips] = useState<Trip[]>(SAMPLE_TRIPS);
+  const [loading, setLoading] = useState(true);
 
-  const filteredTrips = SAMPLE_TRIPS.filter((trip) =>
+  useEffect(() => {
+    const fetchTrips = async () => {
+      try {
+        setLoading(true);
+        const fbTrips = await getUserTrips();
+        
+        // Map Firestore trips to Trip interface
+        const mappedTrips = fbTrips.map((fbTrip: any) => {
+          const createdAt = fbTrip.createdAt?.toDate?.() || new Date(fbTrip.createdAt);
+          return {
+            id: fbTrip.id,
+            from: fbTrip.fromAddress || '',
+            to: fbTrip.toAddress || '',
+            date: createdAt.toLocaleString(),
+            duration: fbTrip.duration,
+            distance: fbTrip.distance,
+            status: fbTrip.status || 'completed',
+            fare: fbTrip.fare,
+            startedAt: fbTrip.startedAt,
+          };
+        });
+
+        setTrips(mappedTrips.length > 0 ? mappedTrips : SAMPLE_TRIPS);
+      } catch (error) {
+        console.error('Failed to fetch trips:', error);
+        setTrips(SAMPLE_TRIPS);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTrips();
+  }, []);
+
+  const filteredTrips = trips.filter((trip) =>
     trip.from.toLowerCase().includes(searchQuery.toLowerCase()) ||
     trip.to.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -120,6 +158,11 @@ export default function HistoryPage() {
               {filteredTrips.map((trip) => (
                 <TripHistoryCard key={trip.id} trip={trip} />
               ))}
+            </div>
+          ) : loading ? (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 py-12">
+              <div className="animate-spin h-8 w-8 border-4 border-muted-foreground border-t-primary rounded-full" />
+              <p className="text-foreground font-medium mt-4">Loading trips...</p>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 py-12">
