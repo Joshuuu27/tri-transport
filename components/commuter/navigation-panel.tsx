@@ -126,7 +126,7 @@ export default function NavigationPanel({
             onChange={(e) => {
               // Don't allow changes if tracking is active
               if (!isTracking) {
-                setStartingPoint(e.target.value);
+                setStartingPoint(e.target.value); 
               }
             }}
             onFocus={() => { if (onMapClickModeChange) onMapClickModeChange('from'); }}
