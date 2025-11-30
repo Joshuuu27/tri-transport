@@ -49,7 +49,16 @@ In Google Cloud Console, enable these APIs:
 Your `.env` file should have:
 ```bash
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyA3MZQE9Q8qsxFr3_hMN0JUsXt76PVFVPc
+
+# Fare Calculation Settings
+NEXT_PUBLIC_BASEFARE=15
+NEXT_PUBLIC_PERKM=10
 ```
+
+**Fare Calculation:**
+- `NEXT_PUBLIC_BASEFARE`: Base fare in PHP (default: 15)
+- `NEXT_PUBLIC_PERKM`: Price per kilometer in PHP (default: 10)
+- Formula: `Fare = BASEFARE + (Distance in km × PERKM)`
 
 ### 7. **Check Browser Console**
 Open DevTools (F12) → Console → Check for error messages

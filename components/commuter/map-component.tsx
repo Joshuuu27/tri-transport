@@ -4,7 +4,8 @@
 import { useEffect, useRef, useCallback } from "react";
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-
+const BASEFARE = parseFloat(process.env.NEXT_PUBLIC_BASEFARE || '15');
+const PERKM = parseFloat(process.env.NEXT_PUBLIC_PERKM || '10');
 function loadGoogleMapsScript(apiKey: string) {
   if (typeof window === "undefined" || document.getElementById("google-maps-script")) return;
   const script = document.createElement("script");
@@ -425,7 +426,7 @@ export default function MapComponent({ startingPoint, destination, startCoords, 
                   const route = result.routes[0];
                   const leg = route.legs[0];
                   const distanceKm = leg.distance.value / 1000;
-                  const fare = 15 + distanceKm * 10;
+                  const fare = BASEFARE + distanceKm * PERKM;
                   if (onFareChange) onFareChange(Math.round(fare));
             } else {
               directionsRenderer.current.set("directions", null);
