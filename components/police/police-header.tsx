@@ -1,22 +1,24 @@
 "use client";
 
-import { LogOut, Menu, X } from "lucide-react";
+import { LogOut, Menu, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import Link from "next/link";
 import authService from "@/lib/services/AuthService";
 import { handleLogout } from "@/lib/auth/logout";
 import { APP_NAME } from "@/constant";
+import { useSOSAlertContext } from "@/app/context/SOSAlertContext";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { hasNewAlert } = useSOSAlertContext();
 
   const navigationLinks = [
-    { label: "Home", href: "/" },
-    { label: "SOS", href: "/driver/trip-history" },
-    { label: "Complaints", href: "/driver/commuter" },
-    { label: "Profile", href: "/driver/profile" },
-    { label: "Settings", href: "/driver/settings" },
+    { label: "Home", href: "/police" },
+    { label: "SOS Alerts", href: "/police/sos-alerts", isSOS: true },
+    { label: "Complaints", href: "/police/complaints" },
+    { label: "Profile", href: "/police/profile" },
+    { label: "Settings", href: "/police/settings" },
   ];
 
   return (
@@ -38,8 +40,11 @@ export default function Header() {
               <Link key={link.href} href={link.href}>
                 <Button
                   variant="ghost"
-                  className="text-foreground hover:bg-muted"
+                  className={`text-foreground hover:bg-muted ${
+                    link.isSOS && hasNewAlert ? "animate-pulse bg-red-100 text-red-700 font-bold" : ""
+                  }`}
                 >
+                  {link.isSOS && hasNewAlert && <AlertCircle className="h-4 w-4 mr-1" />}
                   {link.label}
                 </Button>
               </Link>
@@ -81,8 +86,11 @@ export default function Header() {
               >
                 <Button
                   variant="ghost"
-                  className="w-full justify-start text-foreground hover:bg-muted"
+                  className={`w-full justify-start text-foreground hover:bg-muted ${
+                    link.isSOS && hasNewAlert ? "animate-pulse bg-red-100 text-red-700 font-bold" : ""
+                  }`}
                 >
+                  {link.isSOS && hasNewAlert && <AlertCircle className="h-4 w-4 mr-2" />}
                   {link.label}
                 </Button>
               </Link>

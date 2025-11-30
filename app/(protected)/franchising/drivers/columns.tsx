@@ -41,7 +41,7 @@ export const columns: ColumnDef<Drivers>[] = [
 
           <DropdownMenuContent align="end" className="w-40">
             <DropdownMenuItem
-              onClick={() => window.location.href = `/drivers/${driver.id}`}
+              onClick={() => window.location.href = `/franchising/drivers/${driver.id}`}
             >
               View
             </DropdownMenuItem>
