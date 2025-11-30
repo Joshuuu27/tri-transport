@@ -37,7 +37,7 @@ export default function NavigationPanel({
   fare,
   onRequestCurrentLocation,
   isTracking,
-  onToggleTracking,
+  onToggleTracking, 
   mapClickMode,
   onMapClickModeChange,
 }: NavigationPanelProps) {
