@@ -30,7 +30,7 @@ export default function LoginPage() {
             <Leaf className="w-8 h-8 text-primary-foreground" />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            Tri-Transport
+            FAIR-FARE
           </h1>
           <p className="text-muted-foreground">
             Sign in to your account to continue

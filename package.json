@@ -1,5 +1,5 @@
 {
-  "name": "tri-transport",
+  "name": "FairFare",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -37,6 +37,7 @@
     "lucide-react": "^0.553.0",
     "next": "16.0.2",
     "next-firebase-auth-edge": "^1.11.1",
+    "next-pwa": "^5.6.0",
     "nuqs": "^2.7.3",
     "openai": "^6.9.1",
     "prisma": "^6.19.0",
@@ -53,6 +54,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/dotenv": "^8.2.3",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/next-pwa": "^5.6.9",
     "@types/node": "^20",
     "@types/prompts": "^2.4.9",
     "@types/react": "^19",
