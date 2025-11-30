@@ -16,7 +16,7 @@ export default function Header() {
     { label: "History", href: "/user/trip-history" },
     { label: "QR Code Scanner", href: "/user/scanner" },
     { label: "Report", href: "/user/report" },
-    { label: "Commend", href: "/user/Commend" },
+    { label: "Commend", href: "/user/commend" },
   ];
 
   return (
