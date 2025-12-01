@@ -6,9 +6,7 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react"]
   },
-  turbo: {
-    enabled: false,
-  },
+  turbopack: {},
   typescript: {
     ignoreBuildErrors: true,
   },
