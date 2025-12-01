@@ -8,16 +8,17 @@ interface Trip {
   from: string;
   to: string;
   date: string;
-  duration: string;
-  distance: string;
+  duration?: string;
+  distance?: string;
   status: 'completed' | 'ongoing' | 'upcoming';
 }
 
 interface TripHistoryCardProps {
   trip: Trip;
+  onViewDetails?: (trip: Trip) => void;
 }
 
-export default function TripHistoryCard({ trip }: TripHistoryCardProps) {
+export default function TripHistoryCard({ trip, onViewDetails }: TripHistoryCardProps) {
   const statusColors = {
     completed: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
     ongoing: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -74,6 +75,7 @@ export default function TripHistoryCard({ trip }: TripHistoryCardProps) {
           variant="ghost"
           size="sm"
           className="text-primary hover:bg-primary/10 gap-1"
+          onClick={() => onViewDetails?.(trip)}
         >
           View Details
           <ChevronRight className="h-4 w-4" />

@@ -5,26 +5,19 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import Link from "next/link";
 import authService from "@/lib/services/AuthService";
+import { handleLogout } from "@/lib/auth/logout";
+import { APP_NAME } from "@/constant";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navigationLinks = [
-    { label: "History", href: "/trip-history" },
-    { label: "Bookings", href: "/commuter" },
-    { label: "Profile", href: "/profile" },
-    { label: "Settings", href: "/settings" },
+    { label: "Home", href: "/" },
+    { label: "History", href: "/user/trip-history" },
+    { label: "QR Code Scanner", href: "/user/scanner" },
+    { label: "Report", href: "/user/report" },
+    { label: "Commend", href: "/user/commend" },
   ];
-
- const handleLogout = async () => {
-    try {
-      const res = await authService.logout();
-
-      window.location.href = "/login";
-    } catch (err) {
-      console.error("Logout failed", err);
-    }
-  };
 
   return (
     <header className="border-b border-border bg-card top-0 z-50">
@@ -33,10 +26,10 @@ export default function Header() {
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <span className="text-sm font-bold text-primary-foreground">
-                T
+                F
               </span>
             </div>
-            <h1 className="text-xl font-bold text-foreground">Tri-Transport</h1>
+            <h1 className="text-xl font-bold text-foreground">{APP_NAME}</h1>
           </div>
 
           {/* Desktop Navigation */}

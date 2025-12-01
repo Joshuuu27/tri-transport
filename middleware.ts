@@ -1,29 +1,66 @@
-// middleware.ts (root of your Next.js project)
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { verifyToken } from "@/lib/auth";
 
-export function middleware(req: NextRequest) {
-  const token = req.cookies.get("token")?.value;
-  const verified = token ? verifyToken(token) : null;
-console.log("Verified token:", verified);
-  const { pathname } = req.nextUrl;
+export async function middleware(req: NextRequest) {
+  const url = req.nextUrl.clone();
 
-  // ✅ If user is logged in, block access to login/register
-  if (token && (pathname === "/login" || pathname === "/register")) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+  // call our verify endpoint
+  const verifyRes = await fetch(`${req.nextUrl.origin}/api/auth/verify`, {
+    method: "POST",
+    headers: {
+      cookie: req.headers.get("cookie") || "",
+    },
+  });
+
+  const data = await verifyRes.json();
+  const { valid, role } = data;
+
+// const role = "admin";
+// const valid = true;
+
+  const path = req.nextUrl.pathname;
+
+  // not logged in
+  if (!valid) {
+    if (!path.startsWith("/login")) {
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
   }
 
-  // ✅ If user is not logged in, block access to protected routes
-  const protectedRoutes = ["/dashboard", "/profile", "/settings"];
-  if (!token && protectedRoutes.some((route) => pathname.startsWith(route))) {
-    return NextResponse.redirect(new URL("/login", req.url));
+  // already logged in → redirect away from login
+  if (path.startsWith("/login")) {
+    if (role === "admin") url.pathname = "/admin";
+    else if (role === "driver") url.pathname = "/driver";
+    else if (role === "franchising") url.pathname = "/franchising";
+    else url.pathname = "/user";
+    return NextResponse.redirect(url);
+  }
+
+  // route protection
+  if (path.startsWith("/admin") && role !== "admin") {
+    url.pathname = "/unauthorized";
+    return NextResponse.redirect(url);
+  }
+  if (path.startsWith("/driver") && role !== "driver") {
+    url.pathname = "/unauthorized";
+    return NextResponse.redirect(url);
+  }
+
+  if(path.startsWith("/user") && role !== "user") {
+    url.pathname = "/unauthorized";
+    return NextResponse.redirect(url);
+  }
+
+  if(path.startsWith("/franchising") && role !== "franchising") {
+    url.pathname = "/unauthorized";
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
 }
 
-// Apply middleware to specific routes
 export const config = {
-  matcher: ["/login", "/register", "/dashboard/:path*", "/profile/:path*", "/settings/:path*"],
+  matcher: ["/admin/:path*", "/driver/:path*", "/user/:path*","/franchising/:path*", "/login"],
 };
