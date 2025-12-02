@@ -3,14 +3,14 @@
 import { useAuthContext } from "@/app/context/AuthContext";
 
 import { Card, CardContent } from "@/components/ui/card";
-import Header from "@/components/driver/driver-header";
+import CttmoHeader from "@/components/cttmo/cttmo-header";
 
 const CttmoPage = () => {
   const { user, role } = useAuthContext();
 
   return (
     <>
-      <Header />
+      <CttmoHeader />
 
       {/* Content */}
       <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">

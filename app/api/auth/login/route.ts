@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     const name = decoded.name ?? "";
     const picture = decoded.picture ?? "";
 
-    const userDoc = await db.collection("users").doc(uid).get();
+    const userDoc = await db.collection("users").doc(nuid).get();
     let role = "user"; // default role
 
     if (!userDoc.exists) {

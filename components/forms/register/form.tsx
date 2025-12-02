@@ -114,6 +114,10 @@ export function RegisterForm() {
                 <RadioGroupItem value="police" id="r5" />
                 <Label htmlFor="r3">Police</Label>
               </div>
+              <div className="flex items-center gap-3">
+                <RadioGroupItem value="cttmo" id="r6" />
+                <Label htmlFor="r3">CTTMO</Label>
+              </div>
             </RadioGroup>
           </div>
         </FieldSet>
