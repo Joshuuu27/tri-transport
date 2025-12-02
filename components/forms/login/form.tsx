@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
-import Link from "next/link";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
@@ -15,7 +14,7 @@ import { signInWithFacebook, signInWithGoogle } from "@/lib/firebase-auth";
 import { createSession } from "@/actions/auth-actions";
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, ] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

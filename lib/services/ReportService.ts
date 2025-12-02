@@ -120,6 +120,49 @@ export async function getCommuterReportHistory(
 }
 
 /**
+ * Get all report cases for a specific driver
+ */
+export async function getDriverReports(
+  driverId: string
+): Promise<ReportCase[]> {
+  try {
+    const q = query(
+      collection(db, REPORTS_COLLECTION),
+      where("driverId", "==", driverId),
+      orderBy("createdAt", "desc")
+    );
+
+    const querySnapshot = await getDocs(q);
+    const reports: ReportCase[] = [];
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      reports.push({
+        id: doc.id,
+        commuterId: data.commuterId,
+        commuterName: data.commuterName,
+        commuterEmail: data.commuterEmail,
+        phoneNumber: data.phoneNumber,
+        reportType: data.reportType,
+        description: data.description,
+        driverId: data.driverId,
+        vehicleNumber: data.vehicleNumber,
+        plateNumber: data.plateNumber,
+        location: data.location,
+        incidentDate: data.incidentDate?.toDate(),
+        createdAt: data.createdAt?.toDate() || new Date(),
+        status: data.status || "pending",
+      });
+    });
+
+    return reports;
+  } catch (error) {
+    console.error("Error fetching driver reports:", error);
+    throw new Error("Failed to fetch driver reports");
+  }
+}
+
+/**
  * Get all report cases (admin view)
  */
 export async function getAllReportCases(): Promise<ReportCase[]> {
