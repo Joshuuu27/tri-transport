@@ -173,7 +173,7 @@ export default function MapComponent({ startingPoint, destination, startCoords, 
 
       mapInstance.current = new (window as any).google.maps.Map(mapRef.current, {
         center: defaultCenter,
-        zoom: 12,
+        zoom: 17,
       });
 
       directionsRenderer.current = new (window as any).google.maps.DirectionsRenderer();
@@ -185,7 +185,7 @@ export default function MapComponent({ startingPoint, destination, startCoords, 
           (pos) => {
             const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
             mapInstance.current.setCenter(coords);
-            mapInstance.current.setZoom(14);
+            mapInstance.current.setZoom(17);
             // Place a marker for current location
             if (currentLocationMarker.current) {
               currentLocationMarker.current.setPosition(coords);
@@ -196,8 +196,8 @@ export default function MapComponent({ startingPoint, destination, startCoords, 
                 title: "You are here",
                 icon: {
                   path: (window as any).google.maps.SymbolPath.CIRCLE,
-                  scale: 6,
-                  fillColor: "#2b8bf2",
+                  scale: 10,
+                  fillColor: "#ff0000",
                   fillOpacity: 1,
                   strokeWeight: 2,
                   strokeColor: "#ffffff",
