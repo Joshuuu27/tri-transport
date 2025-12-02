@@ -13,6 +13,7 @@ import {
   PaginationState,
   ColumnFiltersState,
 } from "@tanstack/react-table";
+
 import {
   Table,
   TableBody,
@@ -22,12 +23,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Columns2 } from "lucide-react";
 import { DataTableFilter } from "./DataTableFilter";
@@ -64,9 +67,27 @@ export function DataTable<TData>({
     pageSize: rowsPerPage,
   });
 
+  /**
+   * AUTO-INJECT ROW NUMBER COLUMN
+   */
+  const numberedColumns: ColumnDef<TData>[] = showOrderNumbers
+    ? [
+        {
+          id: "__rowNumber",
+          header: "#",
+          cell: ({ row }) =>
+            row.index + 1 + pagination.pageIndex * pagination.pageSize,
+          enableSorting: false,
+          enableHiding: false,
+          size: 50,
+        },
+        ...columns,
+      ]
+    : columns;
+
   const table = useReactTable({
     data,
-    columns,
+    columns: numberedColumns,
     state: {
       sorting,
       columnFilters,
@@ -89,6 +110,7 @@ export function DataTable<TData>({
           {showColumnFilter && (
             <DataTableFilter table={table} columns={columns} />
           )}
+
           {showColumnToggle && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -102,24 +124,23 @@ export function DataTable<TData>({
                   <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent align="end">
                 {table
                   .getAllColumns()
                   .filter((column) => column.getCanHide())
-                  .map((column) => {
-                    return (
-                      <DropdownMenuCheckboxItem
-                        key={column.id}
-                        className="capitalize"
-                        checked={column.getIsVisible()}
-                        onCheckedChange={(value) =>
-                          column.toggleVisibility(!!value)
-                        }
-                      >
-                        {column.id}
-                      </DropdownMenuCheckboxItem>
-                    );
-                  })}
+                  .map((column) => (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  ))}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -148,12 +169,13 @@ export function DataTable<TData>({
               </TableRow>
             ))}
           </TableHeader>
+
           <TableBody>
             {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row, index) => (
+              table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  onClick={() => onRowClick && onRowClick(row.original)}
+                  onClick={() => onRowClick?.(row.original)}
                   className={
                     onRowClick ? "cursor-pointer hover:bg-gray-100" : ""
                   }
@@ -172,7 +194,7 @@ export function DataTable<TData>({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length + (showOrderNumbers ? 1 : 0)}
+                  colSpan={numberedColumns.length}
                   className="text-center"
                 >
                   {emptyMessage}
@@ -190,6 +212,7 @@ export function DataTable<TData>({
             Page {table.getState().pagination.pageIndex + 1} of{" "}
             {table.getPageCount()}
           </div>
+
           <div className="space-x-2">
             <Button
               variant="outline"
@@ -199,6 +222,7 @@ export function DataTable<TData>({
             >
               Previous
             </Button>
+
             <Button
               variant="outline"
               size="sm"

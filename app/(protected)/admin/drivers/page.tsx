@@ -48,27 +48,27 @@ export default function Drivers() {
   const [loading, setLoading] = React.useState(true);
 
   // fetch from your service
-  React.useEffect(() => {
-    const fetchData = async () => {
-      try {                        
-        const customers: Customer[] = await customerService.getCustomers();        
-        setData(customers);
-        console.log(customers);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  // React.useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       const customers: Customer[] = await customerService.getCustomers();
+  //       setData(customers);
+  //       console.log(customers);
+  //     } catch (error) {
+  //       console.error(error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchData();
+  // }, []);
 
   // Ideally we would filter the data server-side, but for the sake of this example, we'll filter the data client-side
   const filteredData = React.useMemo(() => {
     return data.filter((customer) => {
       const matchesTitle =
         firstname === "" ||
-        customer.firstname.toLowerCase().includes(firstname.toLowerCase());    
+        customer.firstname.toLowerCase().includes(firstname.toLowerCase());
       return matchesTitle;
     });
   }, [firstname, data]);
@@ -120,7 +120,7 @@ export default function Drivers() {
         accessorKey: "lastname",
         header: ({ column }: { column: Column<Customer, unknown> }) => (
           <DataTableColumnHeader column={column} title="Last Name" />
-        ),                
+        ),
         enableColumnFilter: true,
       },
       {
@@ -185,7 +185,7 @@ export default function Drivers() {
     []
   );
 
-  const { table } = useDataTable({  
+  const { table } = useDataTable({
     data: filteredData,
     columns,
     pageCount: 1,
@@ -193,7 +193,7 @@ export default function Drivers() {
       sorting: [{ id: "firstname", desc: true }],
       columnPinning: { right: ["actions"] },
     },
-    getRowId: (row) => String(row.id), 
+    getRowId: (row) => String(row.id),
   });
 
   return (

@@ -26,8 +26,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tri-Fare-App",
+  title: "Fair-Fare-App",
   description: "A ride-sharing platform connecting users with drivers.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icons/icon-512x512.png",
+    apple: "/icons/icon-512x512.png",
+  },
+  themeColor: "#ffffff",
 };
 
 export default async function RootLayout({

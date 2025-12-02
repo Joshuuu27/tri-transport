@@ -5,6 +5,7 @@ import { Search, MapPin, Calendar, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import TripHistoryCard from '@/components/commuter/trip-history-card';
 import Header from '@/components/commuter/trip-history-header';
+import TripDetailsModal from '@/components/commuter/trip-details-modal';
 import { getUserTrips } from '@/lib/firebase-trips';
 
 interface Trip {
@@ -80,6 +81,8 @@ export default function HistoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [trips, setTrips] = useState<Trip[]>(SAMPLE_TRIPS);
   const [loading, setLoading] = useState(true);
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchTrips = async () => {
@@ -120,6 +123,11 @@ export default function HistoryPage() {
     trip.to.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleViewDetails = (trip: Trip) => {
+    setSelectedTrip(trip);
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -156,7 +164,7 @@ export default function HistoryPage() {
           {filteredTrips.length > 0 ? (
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-1">
               {filteredTrips.map((trip) => (
-                <TripHistoryCard key={trip.id} trip={trip} />
+                <TripHistoryCard key={trip.id} trip={trip} onViewDetails={handleViewDetails} />
               ))}
             </div>
           ) : loading ? (
@@ -173,6 +181,13 @@ export default function HistoryPage() {
           )}
         </section>
       </main>
+
+      {/* Trip Details Modal */}
+      <TripDetailsModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        trip={selectedTrip}
+      />
     </div>
   );
 }

@@ -159,6 +159,7 @@ export default function Home() {
                 <Button
                   size="lg"
                   className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  onClick={() => router.push("/user/commuter")}
                 >
                   Start Your Ride
                 </Button>
