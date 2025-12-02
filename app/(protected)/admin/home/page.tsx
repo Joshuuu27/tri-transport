@@ -2,18 +2,18 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation"; // Next.js 13+ use "next/navigation" for router in app dir
-import { useAuth } from "@/app/context/AuthContext";
+import { useAuthContext } from "@/app/context/AuthContext";
 
 const LoggedIn = () => {
-  const { authUser, loading } = useAuth();
+  const { user, role } = useAuthContext();
   const router = useRouter();
 
   // Redirect to home if not authenticated
   useEffect(() => {
-    if (!loading && !authUser) {
+    if (!user) {
       router.push("/"); // Redirect to login/root
     }
-  }, [authUser, loading, router]);
+  }, [user, router]);
 
   // Placeholder sign out handler
   const handleSignOut = () => {
@@ -23,14 +23,10 @@ const LoggedIn = () => {
 
   return (
     <div>
-      {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <>
-          <h1>Welcome, {authUser?.email}</h1>
-          <button onClick={handleSignOut}>Sign Out</button>
-        </>
-      )}
+      <>
+        <h1>Welcome, {user?.email}</h1>
+        <button onClick={handleSignOut}>Sign Out</button>
+      </>
     </div>
   );
 };

@@ -3,9 +3,9 @@
 import { useAuthContext } from "@/app/context/AuthContext";
 
 import { Card, CardContent } from "@/components/ui/card";
-import Header from "@/components/driver/driver-header";
+import Header from "@/components/operator/operator-header";
 
-const CttmoPage = () => {
+const OperatorPage = () => {
   const { user, role } = useAuthContext();
 
   return (
@@ -34,4 +34,4 @@ const CttmoPage = () => {
   );
 };
 
-export default CttmoPage;
+export default OperatorPage;

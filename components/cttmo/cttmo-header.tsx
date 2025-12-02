@@ -6,17 +6,16 @@ import { useState } from "react";
 import Link from "next/link";
 import authService from "@/lib/services/AuthService";
 import { handleLogout } from "@/lib/auth/logout";
+import { APP_NAME } from "@/constant";
 
-export default function Header() {
+export default function CttmoHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navigationLinks = [
     { label: "Home", href: "/" },
-    { label: "Operators", href: "/franchising/operators" },
-    { label: "Drivers", href: "/franchising/drivers" },
-    { label: "Scanner", href: "/franchising/scanner" },
-    { label: "Profile", href: "/franchising/profile" },
-    { label: "Settings", href: "/franchising/settings" },
+    { label: "Operators", href: "/cttmo/operators" },
+    { label: "Profile", href: "/cttmo/profile" },
+    { label: "Settings", href: "/cttmo/settings" },
   ];
 
   return (
@@ -26,10 +25,10 @@ export default function Header() {
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <span className="text-sm font-bold text-primary-foreground">
-                T
+                F
               </span>
             </div>
-            <h1 className="text-xl font-bold text-foreground">Tri-Fare</h1>
+            <h1 className="text-xl font-bold text-foreground">{APP_NAME}</h1>
           </div>
 
           {/* Desktop Navigation */}
@@ -87,7 +86,7 @@ export default function Header() {
                 </Button>
               </Link>
             ))}
-            {/* Mobile Logout */}
+                       {/* Mobile Logout */}
             <Button
               variant="destructive"
               className="w-full justify-start mt-2 flex items-center gap-2"

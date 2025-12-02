@@ -50,10 +50,10 @@ const authService = {
   },
 
   // Get current user profile
-  getProfile: async (): Promise<User | null> => {
-    const result = await apiService.get("auth/me");
-    return result ? (result.data?.data || result.data || null) : null;
-  },
+  // getProfile: async (): Promise<User | null> => {
+  //   const result = await apiService.get("auth/me");
+  //   return result ? (result.data?.data || result.data || null) : null;
+  // },
 
   // Logout user
   logout: async () => {
