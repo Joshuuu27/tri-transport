@@ -1,8 +1,8 @@
 // src/app/api/auth/request-password-reset/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { PrismaClient } from "@prisma/client";
 import { generateToken } from "@/lib/auth";
-
+const prisma = new PrismaClient()
 export async function POST(req: Request) {
   const { email } = await req.json();
   const user = await prisma.user.findUnique({ where: { email } });
