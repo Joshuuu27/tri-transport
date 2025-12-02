@@ -17,6 +17,7 @@ export default function Header() {
     { label: "QR Code Scanner", href: "/user/scanner" },
     { label: "Report", href: "/user/report" },
     { label: "Commend", href: "/user/commend" },
+    { label: "SOS Alerts", href: "/user/sos-alerts" },
   ];
 
   return (

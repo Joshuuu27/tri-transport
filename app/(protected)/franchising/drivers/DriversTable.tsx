@@ -7,11 +7,18 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { DriversContextMenu } from "./DriversContextMenu";
 
-export function DriversTable({ data }) {
-  const [sortField, setSortField] = useState("name");
-  const [sortDirection, setSortDirection] = useState("asc");
+interface Driver {
+  id: string;
+  name: string;
+  contact?: string;
+  vehicle?: string;
+  [key: string]: any;
+}
+
+export function DriversTable({ data }: { data: Driver[] }) {
+  const [sortField, setSortField] = useState<string>("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   const sortedData = [...data].sort((a, b) => {
     const aVal = a[sortField]?.toString().toLowerCase();
@@ -22,7 +29,7 @@ export function DriversTable({ data }) {
     return 0;
   });
 
-  const toggleSort = (field) => {
+  const toggleSort = (field: string) => {
     if (field === sortField) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
@@ -84,7 +91,7 @@ export function DriversTable({ data }) {
               <TableCell>{driver.vehicle}</TableCell>
 
               <TableCell className="text-right">
-                <DriversContextMenu driver={driver} />
+                {/* Actions would go here */}
               </TableCell>
             </TableRow>
           ))}
