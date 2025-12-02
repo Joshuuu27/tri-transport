@@ -35,6 +35,7 @@ export async function middleware(req: NextRequest) {
     else if (role === "driver") url.pathname = "/driver";
     else if (role === "franchising") url.pathname = "/franchising";
     else if (role === "cttmo") url.pathname = "/cttmo";
+    else if (role === "operator") url.pathname = "/operator";
     else url.pathname = "/user";
     return NextResponse.redirect(url);
   }

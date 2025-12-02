@@ -20,6 +20,7 @@ export default function LoginPage() {
     if (role === "user") router.push("/user");
     if (role === "police") router.push("/police");
     if (role === "cttmo") router.push("/cttmo");
+    if (role === "operator") router.push("/operator");
   }, [user, role, router]);
 
   return (
