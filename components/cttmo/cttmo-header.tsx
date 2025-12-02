@@ -8,16 +8,14 @@ import authService from "@/lib/services/AuthService";
 import { handleLogout } from "@/lib/auth/logout";
 import { APP_NAME } from "@/constant";
 
-export default function Header() {
+export default function CttmoHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navigationLinks = [
     { label: "Home", href: "/" },
-    { label: "History", href: "/user/trip-history" },
-    { label: "QR Code Scanner", href: "/user/scanner" },
-    { label: "Report", href: "/user/report" },
-    { label: "Commend", href: "/user/commend" },
-    { label: "SOS Alerts", href: "/user/sos-alerts" },
+    { label: "Operators", href: "/cttmo/operators" },
+    { label: "Profile", href: "/cttmo/profile" },
+    { label: "Settings", href: "/cttmo/settings" },
   ];
 
   return (

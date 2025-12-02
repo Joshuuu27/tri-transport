@@ -18,6 +18,11 @@ export interface SOSAlert {
   latitude: number;
   longitude: number;
   address?: string;
+  driverId?: string;
+  driverName?: string;
+  vehicleType?: string;
+  plateNumber?: string;
+  licenseNumber?: string;
   timestamp: Date;
   status: "active" | "resolved" | "cancelled";
 }
@@ -30,6 +35,11 @@ export interface SOSAlertInput {
   latitude: number;
   longitude: number;
   address?: string;
+  driverId?: string;
+  driverName?: string;
+  vehicleType?: string;
+  plateNumber?: string;
+  licenseNumber?: string;
 }
 
 const SOS_COLLECTION = "sos_alerts";
@@ -76,6 +86,11 @@ export async function getAllActiveSOSAlerts(): Promise<SOSAlert[]> {
         latitude: data.latitude,
         longitude: data.longitude,
         address: data.address,
+        driverId: data.driverId,
+        driverName: data.driverName,
+        vehicleType: data.vehicleType,
+        plateNumber: data.plateNumber,
+        licenseNumber: data.licenseNumber,
         timestamp: data.timestamp?.toDate() || new Date(),
         status: data.status || "active",
       });
@@ -113,6 +128,11 @@ export async function getUserSOSAlerts(userId: string): Promise<SOSAlert[]> {
         latitude: data.latitude,
         longitude: data.longitude,
         address: data.address,
+        driverId: data.driverId,
+        driverName: data.driverName,
+        vehicleType: data.vehicleType,
+        plateNumber: data.plateNumber,
+        licenseNumber: data.licenseNumber,
         timestamp: data.timestamp?.toDate() || new Date(),
         status: data.status || "active",
       });

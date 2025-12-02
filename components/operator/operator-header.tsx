@@ -4,7 +4,6 @@ import { LogOut, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import Link from "next/link";
-import authService from "@/lib/services/AuthService";
 import { handleLogout } from "@/lib/auth/logout";
 import { APP_NAME } from "@/constant";
 
@@ -13,11 +12,9 @@ export default function Header() {
 
   const navigationLinks = [
     { label: "Home", href: "/" },
-    { label: "History", href: "/user/trip-history" },
-    { label: "QR Code Scanner", href: "/user/scanner" },
-    { label: "Report", href: "/user/report" },
-    { label: "Commend", href: "/user/commend" },
-    { label: "SOS Alerts", href: "/user/sos-alerts" },
+    { label: "Franchise", href: "/operator/franchise" },
+    { label: "Profile", href: "/operator/profile" },
+    { label: "Settings", href: "/operator/settings" },
   ];
 
   return (

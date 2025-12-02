@@ -12,6 +12,7 @@ export default function Header() {
 
   const navigationLinks = [
     { label: "Home", href: "/" },
+    { label: "Operators", href: "/franchising/operators" },
     { label: "Drivers", href: "/franchising/drivers" },
     { label: "Scanner", href: "/franchising/scanner" },
     { label: "Profile", href: "/franchising/profile" },
@@ -86,7 +87,7 @@ export default function Header() {
                 </Button>
               </Link>
             ))}
-                       {/* Mobile Logout */}
+            {/* Mobile Logout */}
             <Button
               variant="destructive"
               className="w-full justify-start mt-2 flex items-center gap-2"
