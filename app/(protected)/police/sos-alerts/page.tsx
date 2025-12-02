@@ -46,14 +46,19 @@ export default function SOSAlertsPage() {
       cell: ({ row }) => row.getValue("userName") || "Unknown",
     },
     {
-      accessorKey: "userEmail",
-      header: "Email",
-      cell: ({ row }) => row.getValue("userEmail") || "N/A",
+      accessorKey: "driverName",
+      header: "Driver Name",
+      cell: ({ row }) => row.getValue("driverName") || "N/A",
     },
     {
-      accessorKey: "userPhone",
-      header: "Phone",
-      cell: ({ row }) => row.getValue("userPhone") || "N/A",
+      accessorKey: "plateNumber",
+      header: "Plate Number",
+      cell: ({ row }) => row.getValue("plateNumber") || "N/A",
+    },
+    {
+      accessorKey: "vehicleType",
+      header: "Vehicle Type",
+      cell: ({ row }) => row.getValue("vehicleType") || "N/A",
     },
     {
       accessorKey: "address",
@@ -373,6 +378,46 @@ export default function SOSAlertsPage() {
                     <p className="font-semibold">{selectedAlert.userPhone}</p>
                   </div>
                 </div>
+              )}
+
+              {/* Driver Information */}
+              {selectedAlert.driverName && (
+                <>
+                  <div className="border-t pt-4 mt-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-3">Driver Information</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-3 bg-slate-50 rounded-lg">
+                        <p className="text-sm text-gray-600">Driver Name</p>
+                        <p className="font-semibold">{selectedAlert.driverName}</p>
+                      </div>
+                      {selectedAlert.licenseNumber && (
+                        <div className="p-3 bg-slate-50 rounded-lg">
+                          <p className="text-sm text-gray-600">License Number</p>
+                          <p className="font-semibold">{selectedAlert.licenseNumber}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Vehicle Information */}
+                  <div className="border-t pt-4 mt-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-3">Vehicle Information</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedAlert.vehicleType && (
+                        <div className="p-3 bg-slate-50 rounded-lg">
+                          <p className="text-sm text-gray-600">Vehicle Type</p>
+                          <p className="font-semibold">{selectedAlert.vehicleType}</p>
+                        </div>
+                      )}
+                      {selectedAlert.plateNumber && (
+                        <div className="p-3 bg-slate-50 rounded-lg">
+                          <p className="text-sm text-gray-600">Plate Number</p>
+                          <p className="font-semibold">{selectedAlert.plateNumber}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
               )}
 
               {/* Location Information */}
