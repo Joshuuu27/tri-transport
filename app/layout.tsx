@@ -14,7 +14,6 @@ import { Header } from "@/components/header";
 import "@/lib/styles/globals.css";
 import { ClientLayout } from "@/components/ClientLayout";
 
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -33,7 +32,7 @@ export const metadata: Metadata = {
     icon: "/icons/icon-512x512.png",
     apple: "/icons/icon-512x512.png",
   },
-  themeColor: "#ffffff",
+  // themeColor: "#ffffff",
 };
 
 export default async function RootLayout({
@@ -43,13 +42,12 @@ export default async function RootLayout({
 }>) {
   // const session = cookies().get(SESSION_COOKIE_NAME)?.value || null;
 
-
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-          <ClientLayout>{children}</ClientLayout>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );

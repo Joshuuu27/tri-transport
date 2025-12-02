@@ -6,13 +6,10 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react"]
   },
-  turbo: {
-    enabled: false,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
-
+  turbopack: {},
 };
 
 export default withPWA({

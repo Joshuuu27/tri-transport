@@ -38,6 +38,8 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  console.log("ROLE:", role);
+
   // route protection
   if (path.startsWith("/admin") && role !== "admin") {
     url.pathname = "/unauthorized";
