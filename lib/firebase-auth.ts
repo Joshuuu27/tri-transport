@@ -1,6 +1,7 @@
 import {
   type User,
   GoogleAuthProvider,
+  FacebookAuthProvider,
   signInWithPopup,
   onAuthStateChanged as _onAuthStateChanged,
 } from 'firebase/auth';
@@ -11,20 +12,32 @@ export function onAuthStateChanged(callback: (authUser: User | null) => void) {
   return _onAuthStateChanged(firebaseAuth, callback);
 }
 
+import { getAuth } from "firebase/auth";
+
 export async function signInWithGoogle() {
   const provider = new GoogleAuthProvider();
+  const auth = getAuth();
 
-  try {
-    const result = await signInWithPopup(firebaseAuth, provider);
+  const result = await signInWithPopup(auth, provider);
+  const user = result.user;
 
-    if (!result || !result.user) {
-      throw new Error('Google sign in failed');
-    }
-    return result.user.uid;
-  } catch (error) {
-    console.error('Error signing in with Google', error);
-  }
+  return {
+    uid: user.uid,
+    idToken: await user.getIdToken(),
+  };
 }
+
+export async function signInWithFacebook() {
+  const provider = new FacebookAuthProvider();
+  const auth = getAuth();
+  const result = await signInWithPopup(auth, provider);
+  const user = result.user;
+  return {
+    uid: user.uid,
+    idToken: await user.getIdToken(),
+  };
+}
+
 
 export async function signOutWithGoogle() {
   try {

@@ -28,12 +28,12 @@ const FranchisingPage = () => {
       <Header />
 
       {/* Content */}
-      <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+      <main className="max-w-5xl mx-auto px-6 py-4 space-y-6">
         <Card>
-          <CardContent className="p-6 space-y-6">
+          <CardContent className="p-6 space-y-2">
             <div>
               <div>
-                <h2 className="text-2xl font-semibold mb-6">Drivers</h2>
+                <h2 className="text-2xl font-semibold mb-6">Operators</h2>
               </div>
               {/* user info example */}
               <DataTable columns={columns} data={drivers} />
