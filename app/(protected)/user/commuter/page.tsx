@@ -213,31 +213,51 @@ export default function Home() {
   }, [startingPoint, destination, fare, startCoords, destCoords])
 
   return (
-    <div className="flex h-screen w-full bg-background">
-      {/* Left Panel */}
-      <NavigationPanel
-        destination={destination}
-        setDestination={setDestination}
-        startingPoint={startingPoint}
-        setStartingPoint={setStartingPointSafe}
-        fare={fare}
-        onRequestCurrentLocation={handleRequestCurrentLocation}
-        isTracking={isTracking}
-        onToggleTracking={handleToggleTracking}
-        mapClickMode={mapClickMode}
-        onMapClickModeChange={setMapClickMode}
-      />
+    <div className="flex flex-col md:flex-row h-screen w-full bg-background relative overflow-hidden">
+      {/* Left Panel - Hidden on mobile, visible on desktop */}
+      <div className="hidden md:block">
+        <NavigationPanel
+          destination={destination}
+          setDestination={setDestination}
+          startingPoint={startingPoint}
+          setStartingPoint={setStartingPointSafe}
+          fare={fare}
+          onRequestCurrentLocation={handleRequestCurrentLocation}
+          isTracking={isTracking}
+          onToggleTracking={handleToggleTracking}
+          mapClickMode={mapClickMode}
+          onMapClickModeChange={setMapClickMode}
+        />
+      </div>
 
       {/* Right Panel - Map */}
-      <MapComponent
-        startingPoint={startingPoint}
-        destination={destination}
-        startCoords={startCoords}
-        destCoords={destCoords}
-        onFareChange={handleFareChange}
-        onMapClick={handleMapClick}
-        startTracking={isTracking}
-      />
+      <div className="flex-1 relative w-full h-full md:h-auto min-h-0">
+        <MapComponent
+          startingPoint={startingPoint}
+          destination={destination}
+          startCoords={startCoords}
+          destCoords={destCoords}
+          onFareChange={handleFareChange}
+          onMapClick={handleMapClick}
+          startTracking={isTracking}
+        />
+      </div>
+
+      {/* Mobile Panel - Bottom sheet */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background border-t border-border shadow-lg max-h-[70vh] overflow-y-auto">
+        <NavigationPanel
+          destination={destination}
+          setDestination={setDestination}
+          startingPoint={startingPoint}
+          setStartingPoint={setStartingPointSafe}
+          fare={fare}
+          onRequestCurrentLocation={handleRequestCurrentLocation}
+          isTracking={isTracking}
+          onToggleTracking={handleToggleTracking}
+          mapClickMode={mapClickMode}
+          onMapClickModeChange={setMapClickMode}
+        />
+      </div>
     </div>
   )
 }
