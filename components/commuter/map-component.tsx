@@ -449,8 +449,8 @@ export default function MapComponent({ startingPoint, destination, startCoords, 
   }, [startingPoint, destination, startCoords, destCoords, onFareChange]);
 
   return (
-    <div className="flex-1 relative overflow-hidden">
-      <div ref={mapRef} className="absolute inset-0" style={{ minHeight: 400 }} />
+    <div className="flex-1 relative overflow-hidden w-full h-full">
+      <div ref={mapRef} className="absolute inset-0 w-full h-full" style={{ minHeight: 400 }} />
     </div>
   );
 }
