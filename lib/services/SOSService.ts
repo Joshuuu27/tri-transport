@@ -146,6 +146,48 @@ export async function getUserSOSAlerts(userId: string): Promise<SOSAlert[]> {
 }
 
 /**
+ * Get all SOS alerts for a specific driver
+ */
+export async function getDriverSOSAlerts(driverId: string): Promise<SOSAlert[]> {
+  try {
+    const q = query(
+      collection(db, SOS_COLLECTION),
+      where("driverId", "==", driverId),
+      orderBy("timestamp", "desc")
+    );
+
+    const querySnapshot = await getDocs(q);
+    const alerts: SOSAlert[] = [];
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      alerts.push({
+        id: doc.id,
+        userId: data.userId,
+        userName: data.userName,
+        userEmail: data.userEmail,
+        userPhone: data.userPhone,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        address: data.address,
+        driverId: data.driverId,
+        driverName: data.driverName,
+        vehicleType: data.vehicleType,
+        plateNumber: data.plateNumber,
+        licenseNumber: data.licenseNumber,
+        timestamp: data.timestamp?.toDate() || new Date(),
+        status: data.status || "active",
+      });
+    });
+
+    return alerts;
+  } catch (error) {
+    console.error("Error fetching driver SOS alerts:", error);
+    throw new Error("Failed to fetch driver SOS alerts");
+  }
+}
+
+/**
  * Update SOS alert status
  */
 export async function updateSOSAlertStatus(

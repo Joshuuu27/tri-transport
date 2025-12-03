@@ -12,9 +12,12 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navigationLinks = [
-    { label: "Home", href: "/" },
+    { label: "Home", href: "/driver" },
     { label: "History", href: "/driver/trip-history" },
     { label: "Bookings", href: "/driver/commuter" },
+    { label: "Commendations", href: "/driver/commendations" },
+    { label: "Reports", href: "/driver/reports" },
+    { label: "SOS Alerts", href: "/driver/sos-alerts" },
     { label: "Profile", href: "/driver/profile" },
     { label: "Settings", href: "/driver/settings" },
   ];
