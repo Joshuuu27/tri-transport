@@ -2,14 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/common/data-table/DataTable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2 } from "lucide-react";
-import { Vehicle, getDriverVehicles, deleteVehicle } from "@/lib/services/VehicleService";
 import { getDriverLicense, setDriverLicense } from "@/lib/services/DriverLicenseService";
-import { AddVehicleDialog } from "@/components/franchising/add-vehicle-dialog";
 import { LoadingScreen } from "@/components/common/loading-component";
 import { toast } from "react-toastify";
 import Header from "@/components/franchising/franchising-header";
@@ -21,87 +16,25 @@ interface DriverDetails {
   name: string;
   email: string;
   companyName?: string;
+  assignedVehicleId?: string;
 }
 
-const vehicleColumns: ColumnDef<Vehicle>[] = [
-  {
-    accessorKey: "plateNumber",
-    header: "Plate Number",
-    cell: ({ row }) => (
-      <span className="font-medium">{row.getValue("plateNumber")}</span>
-    ),
-  },
-  {
-    accessorKey: "bodyNumber",
-    header: "Body Number",
-    cell: ({ row }) => row.getValue("bodyNumber"),
-  },
-  {
-    accessorKey: "vehicleType",
-    header: "Vehicle Type",
-    cell: ({ row }) => (
-      <span className="capitalize">{row.getValue("vehicleType")}</span>
-    ),
-  },
-  {
-    accessorKey: "color",
-    header: "Color",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <div
-          className="w-4 h-4 rounded border border-gray-300"
-          style={{ backgroundColor: row.getValue("color") as string }}
-        />
-        <span className="capitalize">{row.getValue("color")}</span>
-      </div>
-    ),
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => {
-      const vehicle = row.original;
-      const [deleting, setDeleting] = useState(false);
-
-      const handleDelete = async () => {
-        if (!confirm("Are you sure you want to delete this vehicle?")) {
-          return;
-        }
-
-        try {
-          setDeleting(true);
-          await deleteVehicle(vehicle.id);
-          toast.success("Vehicle deleted successfully!");
-          window.location.reload();
-        } catch (error) {
-          toast.error("Failed to delete vehicle");
-        } finally {
-          setDeleting(false);
-        }
-      };
-
-      return (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleDelete}
-          disabled={deleting}
-          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-        >
-          <Trash2 className="w-4 h-4" />
-        </Button>
-      );
-    },
-  },
-];
+interface AssignedVehicle {
+  id: string;
+  plateNumber: string;
+  vehicleType?: string;
+  bodyNumber?: string;
+  franchiseNumber?: string;
+  operatorId?: string;
+}
 
 export default function DriverDetailsPage() {
   const params = useParams();
   const driverId = params.id as string;
 
   const [driver, setDriver] = useState<DriverDetails | null>(null);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [assignedVehicle, setAssignedVehicle] = useState<AssignedVehicle | null>(null);
   const [loading, setLoading] = useState(true);
-  const [openDialog, setOpenDialog] = useState(false);
   const [licenseNumber, setLicenseNumber] = useState("");
   const [editingLicense, setEditingLicense] = useState(false);
   const [savingLicense, setSavingLicense] = useState(false);
@@ -116,9 +49,14 @@ export default function DriverDetailsPage() {
         const driverData = await driverRes.json();
         setDriver(driverData);
 
-        // Fetch vehicles
-        const vehiclesData = await getDriverVehicles(driverId);
-        setVehicles(vehiclesData);
+        // Fetch assigned vehicle if driver has one
+        if (driverData.assignedVehicleId) {
+          const vehicleRes = await fetch(`/api/vehicles/${driverData.assignedVehicleId}`);
+          if (vehicleRes.ok) {
+            const vehicleData = await vehicleRes.json();
+            setAssignedVehicle(vehicleData);
+          }
+        }
 
         // Fetch license number from Firestore
         const licenseData = await getDriverLicense(driverId);
@@ -137,15 +75,6 @@ export default function DriverDetailsPage() {
       fetchDriverData();
     }
   }, [driverId]);
-
-  const handleVehicleAdded = async () => {
-    try {
-      const vehiclesData = await getDriverVehicles(driverId);
-      setVehicles(vehiclesData);
-    } catch (error) {
-      toast.error("Failed to refresh vehicles");
-    }
-  };
 
   const handleSaveLicense = async () => {
     if (!licenseNumber.trim()) {
@@ -266,39 +195,50 @@ export default function DriverDetailsPage() {
           </CardContent>
         </Card>
 
-        {/* Vehicles Section */}
+        {/* Assigned Vehicle Section */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Vehicles</CardTitle>
-            <Button
-              onClick={() => setOpenDialog(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Add Vehicle
-            </Button>
+          <CardHeader>
+            <CardTitle>Assigned Vehicle</CardTitle>
           </CardHeader>
           <CardContent>
-            <DataTable
-              data={vehicles}
-              columns={vehicleColumns}
-              showOrderNumbers={true}
-              rowsPerPage={10}
-              showPagination={true}
-              showColumnFilter={true}
-              showColumnToggle={true}
-              emptyMessage="No vehicles added yet. Click 'Add Vehicle' to get started."
-            />
+            {assignedVehicle ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-6 p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm text-gray-600">Plate Number</p>
+                    <p className="text-lg font-semibold text-blue-600">
+                      {assignedVehicle.plateNumber}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Vehicle Type</p>
+                    <p className="text-lg font-semibold capitalize">
+                      {assignedVehicle.vehicleType || "N/A"}
+                    </p>
+                  </div>
+                  {assignedVehicle.franchiseNumber && (
+                    <div>
+                      <p className="text-sm text-gray-600">Franchise Number</p>
+                      <p className="text-lg font-semibold text-purple-600">
+                        {assignedVehicle.franchiseNumber}
+                      </p>
+                    </div>
+                  )}
+                  <div>
+                      <p className="text-sm text-gray-600">Body Number</p>
+                      <p className="text-lg font-semibold text-purple-600">
+                        {assignedVehicle.bodyNumber}
+                      </p>
+                    </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No vehicle assigned to this driver yet.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
-
-        {/* Add Vehicle Dialog */}
-        <AddVehicleDialog
-          driverId={driverId}
-          open={openDialog}
-          onOpenChange={setOpenDialog}
-          onVehicleAdded={handleVehicleAdded}
-        />
       </div>
     </>
   );

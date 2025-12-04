@@ -13,6 +13,7 @@ export default function Header() {
   const navigationLinks = [
     { label: "Home", href: "/" },
     { label: "Franchise", href: "/operator/franchise" },
+    { label: "Vehicles", href: "/operator/franchise/vehicles" },
     { label: "Profile", href: "/operator/profile" },
     { label: "Settings", href: "/operator/settings" },
   ];

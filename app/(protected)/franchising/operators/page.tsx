@@ -1,26 +1,32 @@
 "use client";
 
 import { useAuthContext } from "@/app/context/AuthContext";
-import { useRouter } from "next/navigation";
-
 import Header from "@/components/franchising/franchising-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState } from "react";
-import { DataTable } from "@/components/common/data-table";
-import { columns } from "./columns";
+import { OperatorsTable, Operator } from "./operators-table";
 
-const FranchisingPage = () => {
+const OperatorsPage = () => {
   const { user, role } = useAuthContext();
-  const [drivers, setDrivers] = useState<Drivers[]>([]);
+  const [operators, setOperators] = useState<Operator[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadOperators = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/operators");
+      const data = await res.json();
+      setOperators(data || []);
+    } catch (error) {
+      console.error("Error fetching operators:", error);
+      setOperators([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const load = async () => {
-      const res = await fetch("/api/drivers");
-      const data = await res.json();
-      setDrivers(data);
-    };
-
-    load();
+    loadOperators();
   }, []);
 
   return (
@@ -35,8 +41,14 @@ const FranchisingPage = () => {
               <div>
                 <h2 className="text-2xl font-semibold mb-6">Operators</h2>
               </div>
-              {/* user info example */}
-              <DataTable columns={columns} data={drivers} />
+              {/* Operators table */}
+              {loading ? (
+                <div className="text-center text-gray-500 py-8">
+                  Loading operators...
+                </div>
+              ) : (
+                <OperatorsTable data={operators} onOperatorUpdated={loadOperators} />
+              )}
             </div>
           </CardContent>
         </Card>
@@ -45,4 +57,4 @@ const FranchisingPage = () => {
   );
 };
 
-export default FranchisingPage;
+export default OperatorsPage;
