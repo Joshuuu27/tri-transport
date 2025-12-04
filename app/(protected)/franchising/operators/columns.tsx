@@ -1,18 +1,26 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Trash2, Eye, Edit, Users } from "lucide-react";
+import { toast } from "react-toastify";
 
-export type User = {
+export type Operator = {
   id: string;
   name: string;
   email: string;
   role: string;
+  franchiseNumber?: string;
+  createdAt?: any;
 };
 
-export const columns: ColumnDef<Drivers>[] = [
+export const columns: ColumnDef<Operator>[] = [
   {
     accessorKey: "name",
     header: "Name",
@@ -22,14 +30,61 @@ export const columns: ColumnDef<Drivers>[] = [
     header: "Email",
   },
   {
+    accessorKey: "franchiseNumber",
+    header: "Franchise Number",
+    cell: ({ row }) => {
+      const franchiseNumber = row.getValue("franchiseNumber");
+      return franchiseNumber ? String(franchiseNumber) : "N/A";
+    },
+  },
+  {
     accessorKey: "role",
     header: "Role",
+    cell: ({ row }) => {
+      const role = row.getValue("role");
+      return (
+        <span className="capitalize px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+          {String(role)}
+        </span>
+      );
+    },
+  },
+  {
+    accessorKey: "createdAt",
+    header: "Created",
+    cell: ({ row }) => {
+      const date = row.getValue("createdAt");
+      if (!date) return "N/A";
+      const createdDate = new Date(date);
+      return createdDate.toLocaleDateString();
+    },
   },
   // ⭐ ACTIONS COLUMN ⭐
   {
     id: "actions",
+    header: "Actions",
     cell: ({ row }) => {
-      const driver = row.original;
+      const operator = row.original;
+
+      const handleDelete = async () => {
+        if (!confirm(`Delete operator ${operator.name}?`)) return;
+
+        try {
+          const response = await fetch(`/api/operators/${operator.id}`, {
+            method: "DELETE",
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to delete operator");
+          }
+
+          toast.success("Operator deleted successfully");
+          window.location.reload();
+        } catch (error) {
+          console.error("Delete error:", error);
+          toast.error("Failed to delete operator");
+        }
+      };
 
       return (
         <DropdownMenu>
@@ -41,33 +96,30 @@ export const columns: ColumnDef<Drivers>[] = [
 
           <DropdownMenuContent align="end" className="w-40">
             <DropdownMenuItem
-              onClick={() => window.location.href = `/franchising/drivers/${driver.id}`}
+              onClick={() => {
+                window.location.href = `/franchising/operators/${operator.id}`;
+              }}
+              className="flex items-center gap-2"
             >
-              View
+              <Eye className="w-4 h-4" />
+              View Details
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              onClick={() => window.location.href = `/franchising/drivers/${driver.id}/qr`}
+              onClick={() => {
+                window.location.href = `/franchising/operators/${operator.id}/edit`;
+              }}
+              className="flex items-center gap-2"
             >
-              Generate QR
-            </DropdownMenuItem>
-
-            <DropdownMenuItem
-              onClick={() => window.location.href = `/drivers/${driver.id}/edit`}
-            >
+              <Edit className="w-4 h-4" />
               Edit
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              className="text-red-600 focus:text-red-600"
-              onClick={() => {
-                if (confirm(`Delete driver ${driver.name}?`)) {
-                  fetch(`/api/drivers/${driver.id}`, {
-                    method: "DELETE",
-                  }).then(() => window.location.reload());
-                }
-              }}
+              onClick={handleDelete}
+              className="text-red-600 focus:text-red-600 flex items-center gap-2"
             >
+              <Trash2 className="w-4 h-4" />
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>

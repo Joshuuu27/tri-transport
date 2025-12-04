@@ -7,65 +7,122 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Mail, Lock, User, Store } from "lucide-react";
-import authService from "@/lib/services/AuthService";
+import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
+import { useRouter } from "next/navigation";
 import { showToast } from "@/components/common/Toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FieldSet } from "@/components/ui/field";
+import { createSession } from "@/actions/auth-actions";
 
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [companyName, setCompanyName] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [role, setRole] = useState("default");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsLoading(false);
-  };
+  const [role, setRole] = useState("user");
+  const router = useRouter();
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
 
+    // Validate inputs
+    if (!name || !email || !password || !confirmPassword) {
+      showToast({
+        type: "error",
+        message: "Please fill in all fields.",
+        actionLabel: "Dismiss",
+      });
+      return;
+    }
+
+    // Validate password match
+    if (password !== confirmPassword) {
+      showToast({
+        type: "error",
+        message: "Passwords do not match.",
+        actionLabel: "Dismiss",
+      });
+      return;
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      showToast({
+        type: "error",
+        message: "Password must be at least 6 characters.",
+        actionLabel: "Dismiss",
+      });
+      return;
+    }
+
     try {
-      const res = await authService.register({
-        name,
+      setIsLoading(true);
+
+      // Create user with Firebase
+      const credential = await createUserWithEmailAndPassword(
+        getAuth(),
         email,
-        password,
-        role,
+        password
+      );
+
+      const user = credential.user;
+      const idToken = await user.getIdToken();
+
+      // Update user profile with name and role in Firestore
+      try {
+        await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            uid: user.uid,
+            email,
+            name,
+            role,
+          }),
+        });
+      } catch (error) {
+        console.error("Error saving user profile:", error);
+        // Continue anyway - session creation is more important
+      }
+
+      // Call the login API to create session
+      const loginResponse = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          uid: user.uid,
+          idToken,
+        }),
       });
 
-      if (res?.success && res?.success === true) {
-        // localStorage.setItem("token", res.token); // or set cookie
-        window.location.href = "/login";
-        showToast({
-          type: "success",
-          message: "User successfully registered.",
-          actionLabel: "Dismiss",
-        });
-        return;
-      } else {
-        showToast({
-          type: "error",
-          message: res?.error || "Registration failed. Please try again.",
-          actionLabel: "Dismiss",
-        });
+      if (!loginResponse.ok) {
+        throw new Error("Failed to create session");
       }
-    } catch (error) {
-      // Axios error with server response
-      const message =
-        error.response?.data?.error || // your backend sends { error: "..." }
-        error.response?.data?.message || // fallback if backend sends { message: "..." }
-        error.message || // generic Axios error
-        "Registration failed";
 
-      // Show toast
+      // Create session cookie
+      await createSession(user.uid);
+
+      showToast({
+        type: "success",
+        message: "User successfully registered.",
+        actionLabel: "Dismiss",
+      });
+
+      router.refresh();
+    } catch (error: any) {
+      const message =
+        error?.code === "auth/email-already-in-use"
+          ? "Email already in use. Please try another."
+          : error?.code === "auth/weak-password"
+          ? "Password is too weak. Please use a stronger password."
+          : error?.code === "auth/invalid-email"
+          ? "Invalid email address."
+          : error?.message || "Registration failed. Please try again.";
+
       showToast({
         type: "error",
         message,
@@ -73,6 +130,7 @@ export function RegisterForm() {
       });
 
       console.error("Registration error:", error);
+      setIsLoading(false);
     }
   }
 
@@ -212,6 +270,7 @@ export function RegisterForm() {
           <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
             id="confirmPassword"
+            onChange={(e) => setConfirmPassword(e.target.value)}
             type={showConfirmPassword ? "text" : "password"}
             placeholder="Confirm your password"
             className="pl-10 pr-10 border-border focus:ring-2 focus:ring-ring focus:border-transparent"
