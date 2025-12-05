@@ -9,6 +9,7 @@ import {
   orderBy,
   doc,
   updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 
 export interface ReportCase {
@@ -219,5 +220,18 @@ export async function updateReportStatus(
   } catch (error) {
     console.error("Error updating report status:", error);
     throw new Error("Failed to update report status");
+  }
+}
+
+/**
+ * Delete a report case (only if status is pending)
+ */
+export async function deleteReport(reportId: string): Promise<void> {
+  try {
+    const reportRef = doc(db, REPORTS_COLLECTION, reportId);
+    await deleteDoc(reportRef);
+  } catch (error) {
+    console.error("Error deleting report:", error);
+    throw new Error("Failed to delete report");
   }
 }

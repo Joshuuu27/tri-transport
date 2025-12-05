@@ -4,8 +4,8 @@ import React, { useState, useEffect } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/common/data-table/DataTable";
 import { Button } from "@/components/ui/button";
-import { Plus, Image as ImageIcon } from "lucide-react";
-import { ReportCase, getCommuterReportHistory } from "@/lib/services/ReportService";
+import { Plus, Image as ImageIcon, Trash2, MoreHorizontal } from "lucide-react";
+import { ReportCase, getCommuterReportHistory, deleteReport } from "@/lib/services/ReportService";
 import { useAuthContext } from "@/app/context/AuthContext";
 import { LoadingScreen } from "@/components/common/loading-component";
 import { ReportDialogComponent } from "@/components/commuter/report-dialog";
@@ -18,12 +18,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ReportWithPlateNumber extends ReportCase {
   fetchedPlateNumber?: string;
 }
 
-const createColumns = (onViewImages: (imageUrls: string[]) => void): ColumnDef<ReportWithPlateNumber>[] => [
+const createColumns = (onViewImages: (imageUrls: string[]) => void, onDeleteClick: (report: ReportWithPlateNumber) => void): ColumnDef<ReportWithPlateNumber>[] => [
   {
     accessorKey: "reportType",
     header: "Report Type",
@@ -90,21 +96,46 @@ const createColumns = (onViewImages: (imageUrls: string[]) => void): ColumnDef<R
     cell: ({ row }) => {
       const report = row.original;
       const hasImages = report.imageUrls && report.imageUrls.length > 0;
+      const isPending = report.status === "pending";
+      
       return (
-        <Button
-          onClick={() => {
-            if (hasImages) {
-              onViewImages(report.imageUrls!);
-            }
-          }}
-          disabled={!hasImages}
-          variant={hasImages ? "default" : "ghost"}
-          size="sm"
-          className="flex items-center gap-2"
-        >
-          <ImageIcon className="w-4 h-4" />
-          {hasImages ? `View (${report.imageUrls!.length})` : "No Images"}
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {hasImages && (
+              <DropdownMenuItem
+                onClick={() => onViewImages(report.imageUrls!)}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <ImageIcon className="h-4 w-4" />
+                <span>View Images ({report.imageUrls!.length})</span>
+              </DropdownMenuItem>
+            )}
+            {!hasImages && (
+              <DropdownMenuItem disabled className="flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" />
+                <span>No Images</span>
+              </DropdownMenuItem>
+            )}
+            {isPending && (
+              <>
+                {hasImages && <div className="h-px bg-gray-100" />}
+                <DropdownMenuItem
+                  onClick={() => onDeleteClick(report)}
+                  className="flex items-center gap-2 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>Delete Report</span>
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       );
     },
   },
@@ -117,6 +148,9 @@ export default function ReportPage() {
   const [openDialog, setOpenDialog] = useState(false);
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState<ReportWithPlateNumber | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (user?.uid) {
@@ -175,6 +209,29 @@ export default function ReportPage() {
     setImageModalOpen(true);
   };
 
+  const handleDeleteClick = (report: ReportWithPlateNumber) => {
+    setReportToDelete(report);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!reportToDelete) return;
+
+    try {
+      setDeleting(true);
+      await deleteReport(reportToDelete.id);
+      toast.success("Report deleted successfully!");
+      setDeleteConfirmOpen(false);
+      setReportToDelete(null);
+      fetchReports();
+    } catch (error) {
+      console.error("Error deleting report:", error);
+      toast.error("Failed to delete report");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <>
@@ -216,7 +273,7 @@ export default function ReportPage() {
         <div className="bg-white rounded-lg shadow-sm p-6">
           <DataTable
             data={reports}
-            columns={createColumns(handleViewImages)}
+            columns={createColumns(handleViewImages, handleDeleteClick)}
             showOrderNumbers={true}
             rowsPerPage={10}
             showPagination={true}
@@ -252,6 +309,49 @@ export default function ReportPage() {
                   </p>
                 </div>
               ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Report</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-gray-600">
+                Are you sure you want to delete this report? This action cannot be undone.
+              </p>
+              {reportToDelete && (
+                <div className="bg-gray-50 p-3 rounded-lg space-y-2 text-sm">
+                  <p>
+                    <span className="font-medium">Type:</span> {reportToDelete.reportType}
+                  </p>
+                  <p>
+                    <span className="font-medium">Description:</span> {reportToDelete.description}
+                  </p>
+                  <p>
+                    <span className="font-medium">Status:</span> <span className="capitalize text-yellow-600">{reportToDelete.status}</span>
+                  </p>
+                </div>
+              )}
+              <div className="flex items-center gap-3 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setDeleteConfirmOpen(false)}
+                  disabled={deleting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleConfirmDelete}
+                  disabled={deleting}
+                >
+                  {deleting ? "Deleting..." : "Delete Report"}
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

@@ -6,7 +6,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/common/data-table/DataTable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Plus, Edit, Users, ArrowLeft, Trash2, MoreHorizontal } from "lucide-react";
+import { Loader2, Plus, Edit, Users, ArrowLeft, Trash2, MoreHorizontal, RotateCcw, History } from "lucide-react";
 import { toast } from "react-toastify";
 import Header from "@/components/franchising/franchising-header";
 import { LoadingScreen } from "@/components/common/loading-component";
@@ -21,6 +21,8 @@ import {
 import EditVehicleModal from "./edit-vehicle-modal";
 import AssignDriverModal from "./assign-driver-modal";
 import AddVehicleModal from "./add-vehicle-modal";
+import RenewFranchiseModal from "./renew-franchise-modal";
+import RenewalHistoryModal from "./renewal-history-modal";
 
 interface Operator {
   id: string;
@@ -41,6 +43,9 @@ interface Vehicle {
   assignedDriverName?: string;
   operatorId: string;
   createdAt?: any;
+  dateAdded?: any;
+  franchiseExpirationDate?: any;
+  renewalHistory?: any[];
 }
 
 export default function OperatorDetailsPage() {
@@ -54,6 +59,8 @@ export default function OperatorDetailsPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAssignDriverOpen, setIsAssignDriverOpen] = useState(false);
   const [isAddVehicleOpen, setIsAddVehicleOpen] = useState(false);
+  const [isRenewOpen, setIsRenewOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   useEffect(() => {
     if (operatorId) {
@@ -135,6 +142,55 @@ export default function OperatorDetailsPage() {
       },
     },
     {
+      accessorKey: "dateAdded",
+      header: "Date Added",
+      enableHiding: false,
+      cell: ({ row }) => {
+        const dateString = row.getValue("dateAdded");
+        if (!dateString) return "N/A";
+        try {
+          const dateObj = new Date(String(dateString));
+          if (isNaN(dateObj.getTime())) return "N/A";
+          return dateObj.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+        } catch {
+          return "N/A";
+        }
+      },
+    },
+    {
+      accessorKey: "franchiseExpirationDate",
+      header: "Franchise Expiration",
+      enableHiding: false,
+      cell: ({ row }) => {
+        const dateString = row.getValue("franchiseExpirationDate");
+        if (!dateString) return "Not Set";
+        try {
+          const dateObj = new Date(String(dateString));
+          if (isNaN(dateObj.getTime())) return "Not Set";
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          dateObj.setHours(0, 0, 0, 0);
+          const isExpired = dateObj < today;
+          return (
+            <span className={isExpired ? "text-red-600 font-semibold" : "text-green-600"}>
+              {dateObj.toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+              {isExpired && <span className="text-red-600"> (Expired)</span>}
+            </span>
+          );
+        } catch {
+          return "Not Set";
+        }
+      },
+    },
+    {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => {
@@ -171,6 +227,32 @@ export default function OperatorDetailsPage() {
               >
                 <Users className="w-4 h-4" />
                 Assign Driver
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem
+                onClick={() => {
+                  setSelectedVehicle(vehicle);
+                  setIsRenewOpen(true);
+                }}
+                className="flex items-center gap-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Renew Franchise
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem
+                onClick={() => {
+                  setSelectedVehicle(vehicle);
+                  setIsHistoryOpen(true);
+                }}
+                className="flex items-center gap-2"
+              >
+                <History className="w-4 h-4" />
+                View History
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
@@ -340,6 +422,36 @@ export default function OperatorDetailsPage() {
             loadVehicles();
           }}
         />
+
+        {/* Renew Franchise Modal */}
+        {selectedVehicle && (
+          <RenewFranchiseModal
+            isOpen={isRenewOpen}
+            onClose={() => {
+              setIsRenewOpen(false);
+              setSelectedVehicle(null);
+            }}
+            vehicle={selectedVehicle}
+            onSuccess={() => {
+              setIsRenewOpen(false);
+              setSelectedVehicle(null);
+              loadVehicles();
+            }}
+          />
+        )}
+
+        {/* Renewal History Modal */}
+        {selectedVehicle && (
+          <RenewalHistoryModal
+            isOpen={isHistoryOpen}
+            onClose={() => {
+              setIsHistoryOpen(false);
+              setSelectedVehicle(null);
+            }}
+            vehiclePlateNumber={selectedVehicle.plateNumber}
+            renewalHistory={selectedVehicle.renewalHistory || []}
+          />
+        )}
       </div>
     </>
   );

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase.admin";
+import { db, firebaseAdmin } from "@/lib/firebase.admin";
 
 export async function GET(req: Request) {
   try {
@@ -20,6 +20,37 @@ export async function GET(req: Request) {
         const vehicleData = doc.data();
         let operatorName = "Unknown";
 
+        // Add missing dateAdded and franchiseExpirationDate for legacy vehicles
+        let dateAdded = vehicleData.dateAdded;
+        let franchiseExpirationDate = vehicleData.franchiseExpirationDate;
+        let renewalHistory = vehicleData.renewalHistory;
+        
+        if (!dateAdded) {
+          // Get the actual date value
+          const actualDateAdded = vehicleData.createdAt ? (vehicleData.createdAt.toDate ? vehicleData.createdAt.toDate() : vehicleData.createdAt) : new Date();
+          dateAdded = firebaseAdmin.firestore.Timestamp.fromDate(actualDateAdded);
+          
+          const franchiseExpDate = new Date(actualDateAdded);
+          franchiseExpDate.setFullYear(franchiseExpDate.getFullYear() + 1);
+          franchiseExpirationDate = firebaseAdmin.firestore.Timestamp.fromDate(franchiseExpDate);
+          
+          renewalHistory = [
+            {
+              renewalDate: dateAdded,
+              expirationDate: franchiseExpirationDate,
+              type: "initial_registration",
+              remarks: "Initial vehicle registration",
+            },
+          ];
+          
+          // Update Firestore with these fields
+          doc.ref.update({
+            dateAdded,
+            franchiseExpirationDate,
+            renewalHistory,
+          }).catch(err => console.error("Error updating vehicle:", err));
+        }
+
         // Fetch operator name if operatorId exists
         if (vehicleData.operatorId) {
           try {
@@ -39,6 +70,9 @@ export async function GET(req: Request) {
           id: doc.id,
           operatorName,
           ...vehicleData,
+          dateAdded,
+          franchiseExpirationDate,
+          renewalHistory,
         };
       })
     );
@@ -55,7 +89,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { plateNumber, bodyNumber, vehicleType, color, franchiseNumber, operatorId } = await req.json();
+    const { plateNumber, bodyNumber, vehicleType, color, franchiseNumber, franchiseExpirationDate, operatorId } = await req.json();
 
     if (!plateNumber || !bodyNumber || !vehicleType || !color || !operatorId) {
       return NextResponse.json(
@@ -65,6 +99,17 @@ export async function POST(req: Request) {
     }
 
     // Create new vehicle document
+    const now = new Date();
+    
+    // Use provided expiration date or default to 1 year from now
+    let expirationDate: Date;
+    if (franchiseExpirationDate) {
+      expirationDate = new Date(franchiseExpirationDate);
+    } else {
+      expirationDate = new Date();
+      expirationDate.setFullYear(expirationDate.getFullYear() + 1);
+    }
+
     const vehicleRef = await db.collection("vehicles").add({
       plateNumber: plateNumber.trim(),
       bodyNumber: bodyNumber.trim(),
@@ -74,8 +119,19 @@ export async function POST(req: Request) {
       operatorId,
       assignedDriverId: null,
       assignedDriverName: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      dateAdded: now,
+      franchiseExpirationDate: expirationDate,
+      // Initial renewal history with first registration
+      renewalHistory: [
+        {
+          renewalDate: now,
+          expirationDate: expirationDate,
+          type: "initial_registration",
+          remarks: "Initial vehicle registration",
+        },
+      ],
+      createdAt: now,
+      updatedAt: now,
     });
 
     return NextResponse.json({
