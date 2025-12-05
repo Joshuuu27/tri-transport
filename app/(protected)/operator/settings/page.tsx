@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useAuthContext } from "@/app/context/AuthContext";
-import Header from "@/components/commuter/trip-history-header";
+import Header from "@/components/operator/operator-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,12 +24,12 @@ interface PasswordFormData {
   confirmPassword: string;
 }
 
-const UserSettingsPage = () => {
+const OperatorSettingsPage = () => {
   const { user } = useAuthContext();
   const [accountData, setAccountData] = useState<AccountFormData>({
     displayName: user?.displayName || "",
     email: user?.email || "",
-    phoneNumber: "",
+    phoneNumber: "", // This would need to be stored in your database
   });
 
   const [passwordData, setPasswordData] = useState<PasswordFormData>({
@@ -73,6 +73,7 @@ const UserSettingsPage = () => {
     try {
       setIsLoadingAccount(true);
 
+      // Update Firebase user profile
       if (user) {
         try {
           const { updateProfile } = await import("firebase/auth");
@@ -97,6 +98,7 @@ const UserSettingsPage = () => {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validation
     if (!passwordData.currentPassword.trim()) {
       toast.error("Current password is required");
       return;
@@ -125,16 +127,24 @@ const UserSettingsPage = () => {
     try {
       setIsLoadingPassword(true);
 
+      // Note: Firebase doesn't have a direct way to change password from the client
+      // You would need to use reauthenticate and then updatePassword
+      // Here's the implementation:
+
       if (user && user.email) {
+        // Import from firebase/auth
         const { reauthenticateWithCredential, EmailAuthProvider, updatePassword } = await import("firebase/auth");
         
         try {
+          // Reauthenticate the user
           const credential = EmailAuthProvider.credential(
             user.email,
             passwordData.currentPassword
           );
 
           await reauthenticateWithCredential(user, credential);
+
+          // Update password
           await updatePassword(user, passwordData.newPassword);
 
           toast.success("Password changed successfully!");
@@ -213,7 +223,7 @@ const UserSettingsPage = () => {
                           className="border-gray-200"
                         />
                         <p className="text-xs text-gray-500">
-                          Your display name for ride bookings and interactions
+                          Your display name visible to drivers and commuters
                         </p>
                       </div>
 
@@ -252,7 +262,7 @@ const UserSettingsPage = () => {
                           className="border-gray-200"
                         />
                         <p className="text-xs text-gray-500">
-                          Your contact number for ride communication
+                          Your contact number for business inquiries
                         </p>
                       </div>
 
@@ -405,4 +415,4 @@ const UserSettingsPage = () => {
   );
 };
 
-export default UserSettingsPage;
+export default OperatorSettingsPage;

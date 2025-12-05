@@ -11,10 +11,8 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navigationLinks = [
-    { label: "Home", href: "/" },
-    { label: "Franchise", href: "/operator/franchise" },
+    { label: "Home", href: "/operator" },
     { label: "Vehicles", href: "/operator/franchise/vehicles" },
-    { label: "Profile", href: "/operator/profile" },
     { label: "Settings", href: "/operator/settings" },
   ];
 

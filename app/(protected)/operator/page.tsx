@@ -1,9 +1,9 @@
 "use client";
 
 import { useAuthContext } from "@/app/context/AuthContext";
-
-import { Card, CardContent } from "@/components/ui/card";
 import Header from "@/components/operator/operator-header";
+import { DashboardIntro } from "@/components/common/dashboard-intro";
+import { Briefcase, Users, BarChart3 } from "lucide-react";
 
 const OperatorPage = () => {
   const { user, role } = useAuthContext();
@@ -13,22 +13,32 @@ const OperatorPage = () => {
       <Header />
 
       {/* Content */}
-      <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
-        <Card>
-          <CardContent className="p-6 space-y-6">
-            <div>
-              {/* user info example */}
-              {user && (
-                <>
-                  <p className="text-sm text-muted-foreground">
-                    Logged in as <strong>{user.email}</strong>
-                  </p>
-                  <p>Role: {role}</p>
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 px-6 py-8">
+        <div className="max-w-5xl mx-auto">
+          <DashboardIntro
+            displayName={user?.displayName}
+            email={user?.email}
+            role={role}
+            subtitle="Start managing your vehicle franchises"
+            features={[
+              {
+                icon: Briefcase,
+                title: "Franchise Management",
+                description: "Manage all your vehicle franchises efficiently",
+              },
+              {
+                icon: Users,
+                title: "Driver Management",
+                description: "Oversee and manage your driver fleet",
+              },
+              {
+                icon: BarChart3,
+                title: "Analytics",
+                description: "Track performance and revenue metrics",
+              },
+            ]}
+          />
+        </div>
       </main>
     </>
   );

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useAuthContext } from "@/app/context/AuthContext";
-import Header from "@/components/commuter/trip-history-header";
+import Header from "@/components/cttmo/cttmo-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ interface PasswordFormData {
   confirmPassword: string;
 }
 
-const UserSettingsPage = () => {
+const CTTMOSettingsPage = () => {
   const { user } = useAuthContext();
   const [accountData, setAccountData] = useState<AccountFormData>({
     displayName: user?.displayName || "",
@@ -213,7 +213,7 @@ const UserSettingsPage = () => {
                           className="border-gray-200"
                         />
                         <p className="text-xs text-gray-500">
-                          Your display name for ride bookings and interactions
+                          Your display name for official city transport records
                         </p>
                       </div>
 
@@ -252,7 +252,7 @@ const UserSettingsPage = () => {
                           className="border-gray-200"
                         />
                         <p className="text-xs text-gray-500">
-                          Your contact number for ride communication
+                          Your contact number for compliance and regulatory matters
                         </p>
                       </div>
 
@@ -405,4 +405,4 @@ const UserSettingsPage = () => {
   );
 };
 
-export default UserSettingsPage;
+export default CTTMOSettingsPage;

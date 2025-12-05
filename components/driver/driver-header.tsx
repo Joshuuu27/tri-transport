@@ -18,7 +18,6 @@ export default function Header() {
     { label: "Commendations", href: "/driver/commendations" },
     { label: "Reports", href: "/driver/reports" },
     { label: "SOS Alerts", href: "/driver/sos-alerts" },
-    { label: "Profile", href: "/driver/profile" },
     { label: "Settings", href: "/driver/settings" },
   ];
 
