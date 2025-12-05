@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/commuter/trip-history-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Heart, Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const UserDashboard = () => {
   const { user, role } = useAuthContext();
@@ -44,6 +45,13 @@ const UserDashboard = () => {
                     <p className="text-sm md:text-base opacity-90">
                       Your safe and convenient transport journey starts here
                     </p>
+                    <Button
+                    size="lg"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                    onClick={() => router.push("/user/commuter")}
+                  >
+                    Start Your Ride
+                </Button>
                   </div>
                 )}
 
