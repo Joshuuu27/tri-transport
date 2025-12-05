@@ -17,7 +17,6 @@ export default function Header() {
     { label: "Home", href: "/police" },
     { label: "SOS Alerts", href: "/police/sos-alerts", isSOS: true },
     { label: "Complaints", href: "/police/complaints" },
-    { label: "Profile", href: "/police/profile" },
     { label: "Settings", href: "/police/settings" },
   ];
 

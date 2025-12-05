@@ -370,6 +370,29 @@ export default function ScanResultPage() {
                             Type: <span className="capitalize">{report.reportType}</span>
                           </p>
                           <p className="text-gray-700">{report.description}</p>
+                          
+                          {/* Display Images if they exist */}
+                          {report.imageUrls && report.imageUrls.length > 0 && (
+                            <div className="mt-3 grid grid-cols-3 gap-2">
+                              {report.imageUrls.map((imageUrl, index) => (
+                                <a
+                                  key={index}
+                                  href={imageUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="relative group"
+                                >
+                                  <img
+                                    src={imageUrl}
+                                    alt={`Evidence ${index + 1}`}
+                                    className="w-full h-20 object-cover rounded border border-gray-200 hover:border-gray-400 transition-all"
+                                  />
+                                  <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 rounded transition-opacity" />
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                          
                           <p className="text-xs text-gray-500 mt-2">
                             {new Date(report.createdAt).toLocaleDateString()} • Status:{" "}
                             <span className={`capitalize font-medium ${

@@ -24,6 +24,7 @@ export interface ReportCase {
   plateNumber?: string;
   location?: string;
   incidentDate?: Date;
+  imageUrls?: string[];
   createdAt: Date;
   status: "pending" | "resolved" | "investigating";
 }
@@ -40,6 +41,7 @@ export interface ReportCaseInput {
   plateNumber?: string;
   location?: string;
   incidentDate?: Date;
+  imageUrls?: string[];
 }
 
 const REPORTS_COLLECTION = "reports";
@@ -109,6 +111,7 @@ export async function getCommuterReportHistory(
         incidentDate: data.incidentDate?.toDate(),
         createdAt: data.createdAt?.toDate() || new Date(),
         status: data.status || "pending",
+        imageUrls: data.imageUrls,
       });
     });
 
@@ -152,6 +155,7 @@ export async function getDriverReports(
         incidentDate: data.incidentDate?.toDate(),
         createdAt: data.createdAt?.toDate() || new Date(),
         status: data.status || "pending",
+        imageUrls: data.imageUrls,
       });
     });
 

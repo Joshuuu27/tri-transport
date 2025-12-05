@@ -12,12 +12,13 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navigationLinks = [
-    { label: "Home", href: "/" },
+    { label: "Home", href: "/user" },
     { label: "History", href: "/user/trip-history" },
     { label: "QR Code Scanner", href: "/user/scanner" },
     { label: "Report", href: "/user/report" },
     { label: "Commend", href: "/user/commend" },
     { label: "SOS Alerts", href: "/user/sos-alerts" },
+    { label: "Settings", href: "/user/settings" },
   ];
 
   return (

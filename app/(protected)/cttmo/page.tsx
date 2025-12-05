@@ -1,9 +1,9 @@
 "use client";
 
 import { useAuthContext } from "@/app/context/AuthContext";
-
-import { Card, CardContent } from "@/components/ui/card";
 import CttmoHeader from "@/components/cttmo/cttmo-header";
+import { DashboardIntro } from "@/components/common/dashboard-intro";
+import { CheckCircle, AlertCircle, ClipboardList } from "lucide-react";
 
 const CttmoPage = () => {
   const { user, role } = useAuthContext();
@@ -13,22 +13,32 @@ const CttmoPage = () => {
       <CttmoHeader />
 
       {/* Content */}
-      <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
-        <Card>
-          <CardContent className="p-6 space-y-6">
-            <div>
-              {/* user info example */}
-              {user && (
-                <>
-                  <p className="text-sm text-muted-foreground">
-                    Logged in as <strong>{user.email}</strong>
-                  </p>
-                  <p>Role: {role}</p>
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 px-6 py-8">
+        <div className="max-w-5xl mx-auto">
+          <DashboardIntro
+            displayName={user?.displayName}
+            email={user?.email}
+            role={role}
+            subtitle="Manage transport regulations and compliance for the city"
+            features={[
+              {
+                icon: CheckCircle,
+                title: "Inspections",
+                description: "Monitor vehicle and driver inspections",
+              },
+              {
+                icon: AlertCircle,
+                title: "Violations",
+                description: "Track and manage traffic violations",
+              },
+              {
+                icon: ClipboardList,
+                title: "Regulations",
+                description: "Enforce city transport regulations",
+              },
+            ]}
+          />
+        </div>
       </main>
     </>
   );
