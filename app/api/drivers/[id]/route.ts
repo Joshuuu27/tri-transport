@@ -25,16 +25,6 @@ export async function GET(_req: Request, { params }: RouteParams) {
   }
 }
 
-export async function DELETE(_req: Request, { params }: RouteParams) {
-  try {
-    await db.collection("users").doc(params.id).delete();
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error DELETE /api/drivers/[id]:", error);
-    return NextResponse.json(
-      { error: "Failed to delete driver" },
-import { db, firebaseAdmin } from "@/lib/firebase.admin";
 
 export async function DELETE(
   req: Request,
