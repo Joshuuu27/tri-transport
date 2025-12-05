@@ -103,7 +103,7 @@ const VehiclesPage = () => {
       <Header />
 
       {/* Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+      <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
         {/* Vehicles Table Card */}
         <Card>
           <CardHeader>
