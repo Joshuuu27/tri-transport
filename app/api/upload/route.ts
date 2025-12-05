@@ -154,11 +154,12 @@ async function handleUpload(req: Request) {
         throw new Error("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET not set");
       }
       
-      // Extract just the bucket name (remove .firebasestorage.app if present)
-      if (storageBucket.includes(".firebasestorage.app")) {
-        storageBucket = storageBucket.replace(".firebasestorage.app", ".appspot.com");
-        console.log("[UPLOAD] Converted bucket name to:", storageBucket);
-      }
+      // Handle bucket name format
+      // If it ends with .firebasestorage.app, keep it as-is (it's the correct format for Firebase Admin SDK)
+      // If it ends with .appspot.com, also keep it as-is
+      // The Firebase Admin SDK accepts both formats
+      
+      console.log("[UPLOAD] Using bucket name as-is:", storageBucket);
       
       bucket = firebaseAdmin.storage().bucket(storageBucket);
       console.log("[UPLOAD] Storage bucket obtained:", storageBucket);

@@ -28,6 +28,7 @@ export interface ReportCase {
   imageUrls?: string[];
   createdAt: Date;
   status: "pending" | "resolved" | "investigating";
+  driverName?: string;
 }
 
 export interface ReportCaseInput {

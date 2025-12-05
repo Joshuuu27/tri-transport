@@ -4,11 +4,117 @@ import { useAuthContext } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Header from "@/components/police/police-header";
 import { DashboardIntro } from "@/components/common/dashboard-intro";
-import { AlertTriangle, MapPin, Users } from "lucide-react";
+import { AlertTriangle, MapPin, Users, FileText } from "lucide-react";
+import { useState, useEffect } from "react";
+import { LoadingScreen } from "@/components/common/loading-component";
+
+interface StatsCard {
+  title: string;
+  value: string | number;
+  icon: React.ComponentType<any>;
+  bgColor: string;
+  textColor: string;
+  route: string;
+}
 
 const PolicePage = () => {
   const { user, role } = useAuthContext();
   const router = useRouter();
+  const [sosAlertsToday, setSosAlertsToday] = useState(0);
+  const [totalSosAlerts, setTotalSosAlerts] = useState(0);
+  const [complaintsToday, setComplaintsToday] = useState(0);
+  const [totalComplaints, setTotalComplaints] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  const fetchDashboardStats = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch SOS alerts
+      const sosResponse = await fetch("/api/police/sos-alerts");
+      if (sosResponse.ok) {
+        const sosData = await sosResponse.json();
+        setTotalSosAlerts(sosData.length);
+
+        // Count SOS alerts from today only
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const todaySosAlerts = sosData.filter((alert: any) => {
+          const alertDate = new Date(alert.timestamp);
+          return alertDate >= today && alertDate < tomorrow;
+        });
+
+        setSosAlertsToday(todaySosAlerts.length);
+      }
+
+      // Fetch complaints
+      const complaintsResponse = await fetch("/api/police/complaints");
+      if (complaintsResponse.ok) {
+        const complaintsData = await complaintsResponse.json();
+        setTotalComplaints(complaintsData.length);
+
+        // Count complaints from today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const todayComplaints = complaintsData.filter((complaint: any) => {
+          const complaintDate = new Date(complaint.createdAt);
+          return complaintDate >= today && complaintDate < tomorrow;
+        });
+
+        setComplaintsToday(todayComplaints.length);
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const stats: StatsCard[] = [
+    {
+      title: "SOS Alerts Today",
+      value: `${sosAlertsToday}/${totalSosAlerts}`,
+      icon: AlertTriangle,
+      bgColor: "bg-red-50",
+      textColor: "text-red-600",
+      route: "/police/sos-alerts",
+    },
+    {
+      title: "Total Complaints",
+      value: totalComplaints,
+      icon: FileText,
+      bgColor: "bg-blue-50",
+      textColor: "text-blue-600",
+      route: "/police/complaints",
+    },
+    {
+      title: "Complaints Today",
+      value: `${complaintsToday}/${totalComplaints}`,
+      icon: Users,
+      bgColor: "bg-amber-50",
+      textColor: "text-amber-600",
+      route: "/police/complaints",
+    },
+  ];
+
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <LoadingScreen />
+      </>
+    );
+  }
 
   return (
     <>
@@ -18,9 +124,9 @@ const PolicePage = () => {
       <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 px-6 py-8">
         <div className="max-w-5xl mx-auto">
           <DashboardIntro
-            displayName={user?.displayName}
-            email={user?.email}
-            role={role}
+            displayName={(user?.displayName as string | undefined) || undefined}
+            email={(user?.email as string | undefined) || undefined}
+            role={(role as string | undefined) || undefined}
             subtitle="Monitor SOS alerts and respond to emergencies"
             features={[
               {
@@ -40,6 +146,30 @@ const PolicePage = () => {
               },
             ]}
           />
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+            {stats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <button
+                  key={index}
+                  onClick={() => router.push(stat.route)}
+                  className={`${stat.bgColor} rounded-lg p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer text-left`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-600 text-sm font-medium">{stat.title}</p>
+                      <p className={`${stat.textColor} text-3xl font-bold mt-2`}>
+                        {stat.value}
+                      </p>
+                    </div>
+                    <Icon className={`${stat.textColor} w-10 h-10 opacity-20`} />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </main>
     </>

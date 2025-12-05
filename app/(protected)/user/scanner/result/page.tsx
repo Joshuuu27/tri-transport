@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import AddCommendationModal from "./_components/AddCommendationModal";
 import AddComplaintModal from "./_components/AddComplaintModal";
+import { ImageViewerModal } from "./_components/ImageViewerModal";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/commuter/trip-history-header";
 import { getDriverLicense } from "@/lib/services/DriverLicenseService";
@@ -46,6 +47,11 @@ export default function ScanResultPage() {
   const [showCommendation, setShowCommendation] = useState(false);
   const [showComplaint, setShowComplaint] = useState(false);
   const [creatingSOSAlert, setCreatingSOSAlert] = useState(false);
+  
+  // Image viewer modal state
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [imageViewerImages, setImageViewerImages] = useState<string[]>([]);
+  const [imageViewerInitialIndex, setImageViewerInitialIndex] = useState(0);
 
   useEffect(() => {
     if (!driverId) return;
@@ -375,20 +381,27 @@ export default function ScanResultPage() {
                           {report.imageUrls && report.imageUrls.length > 0 && (
                             <div className="mt-3 grid grid-cols-3 gap-2">
                               {report.imageUrls.map((imageUrl, index) => (
-                                <a
+                                <button
                                   key={index}
-                                  href={imageUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="relative group"
+                                  onClick={() => {
+                                    setImageViewerImages(report.imageUrls || []);
+                                    setImageViewerInitialIndex(index);
+                                    setImageViewerOpen(true);
+                                  }}
+                                  className="relative group cursor-pointer focus:outline-none"
                                 >
                                   <img
                                     src={imageUrl}
                                     alt={`Evidence ${index + 1}`}
-                                    className="w-full h-20 object-cover rounded border border-gray-200 hover:border-gray-400 transition-all"
+                                    className="w-full h-20 object-cover rounded border border-gray-200 hover:border-gray-400 transition-all group-hover:opacity-80"
                                   />
                                   <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 rounded transition-opacity" />
-                                </a>
+                                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded">
+                                    <span className="text-white text-xs font-medium bg-black/50 px-2 py-1 rounded">
+                                      View
+                                    </span>
+                                  </div>
+                                </button>
                               ))}
                             </div>
                           )}
@@ -435,6 +448,13 @@ export default function ScanResultPage() {
         onClose={() => setShowComplaint(false)}
         driverId={driverId || ""}
         driver={driver}
+      />
+
+      <ImageViewerModal
+        isOpen={imageViewerOpen}
+        onClose={() => setImageViewerOpen(false)}
+        images={imageViewerImages}
+        initialIndex={imageViewerInitialIndex}
       />
     </main>
     </>

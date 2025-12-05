@@ -5,24 +5,17 @@ import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/common/data-table/DataTable";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { ReportCase, getAllReportCases, updateReportStatus } from "@/lib/services/ReportService";
-import { getDriverVehicles } from "@/lib/services/VehicleService";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ReportCase } from "@/lib/services/ReportService";
 import { LoadingScreen } from "@/components/common/loading-component";
 import { toast } from "react-toastify";
 import Header from "@/components/police/police-header";
+import { MoreHorizontal, Eye } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface ReportWithPlateNumber extends ReportCase {
   fetchedPlateNumber?: string;
@@ -31,10 +24,7 @@ interface ReportWithPlateNumber extends ReportCase {
 export default function ComplaintsPage() {
   const [reports, setReports] = useState<ReportWithPlateNumber[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedReport, setSelectedReport] = useState<ReportWithPlateNumber | null>(null);
-  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
-  const [newStatus, setNewStatus] = useState<"pending" | "investigating" | "resolved">("pending");
-  const [isUpdating, setIsUpdating] = useState(false);
+  const router = useRouter();
 
   const columns: ColumnDef<ReportWithPlateNumber>[] = [
     {
@@ -43,24 +33,18 @@ export default function ComplaintsPage() {
       cell: ({ row }) => <div className="capitalize">{row.getValue("reportType")}</div>,
     },
     {
-      accessorKey: "description",
-      header: "Description",
-      cell: ({ row }) => (
-        <div className="max-w-xs truncate">{row.getValue("description") as string}</div>
-      ),
-    },
-    {
       accessorKey: "commuterName",
       header: "Commuter Name",
       cell: ({ row }) => row.getValue("commuterName") || "N/A",
     },
     {
       accessorKey: "driverId",
-      header: "Driver ID",
+      header: "Driver",
       cell: ({ row }) => {
-        const driverId = row.getValue("driverId") as string;
-        if (!driverId) return "N/A";
-        return `${driverId.substring(0, 6)}...${driverId.substring(driverId.length - 4)}`;
+        const report = row.original;
+        const driverName = report.driverName || "N/A";
+        
+        return <div className="text-sm font-medium">{driverName}</div>;
       },
     },
     {
@@ -69,44 +53,8 @@ export default function ComplaintsPage() {
       cell: ({ row }) => row.getValue("fetchedPlateNumber") || "N/A",
     },
     {
-      accessorKey: "location",
-      header: "Location",
-      cell: ({ row }) => row.getValue("location") || "N/A",
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = row.getValue("status") as string;
-        const report = row.original;
-        let statusColor = "";
-        if (status === "pending") statusColor = "text-yellow-600";
-        else if (status === "investigating") statusColor = "text-blue-600";
-        else if (status === "resolved") statusColor = "text-green-600";
-
-        return (
-          <div className="flex items-center gap-2">
-            <span className={`capitalize font-medium ${statusColor}`}>
-              {status}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSelectedReport(report);
-                setNewStatus(status as "pending" | "investigating" | "resolved");
-                setIsStatusDialogOpen(true);
-              }}
-            >
-              Change
-            </Button>
-          </div>
-        );
-      },
-    },
-    {
       accessorKey: "createdAt",
-      header: "Reported Date",
+      header: "Date",
       cell: ({ row }) => {
         const date = row.getValue("createdAt") as Date;
         return new Date(date).toLocaleDateString("en-US", {
@@ -114,6 +62,33 @@ export default function ComplaintsPage() {
           month: "short",
           day: "numeric",
         });
+      },
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        const report = row.original;
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  router.push(`/police/complaints/${report.id}`);
+                }}
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                View Details
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
       },
     },
   ];
@@ -125,31 +100,20 @@ export default function ComplaintsPage() {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const data = await getAllReportCases();
+      // Use the API endpoint which enriches reports with driver names from users collection
+      const response = await fetch("/api/police/complaints");
+      if (!response.ok) throw new Error("Failed to fetch complaints");
+      
+      const data = await response.json();
+      console.log("[Police Complaints] Fetched reports:", data);
 
-      // Fetch plate numbers from vehicles collection for each report
-      const reportsWithPlateNumbers = await Promise.all(
-        data.map(async (report) => {
-          let fetchedPlateNumber = "";
-          if (report.driverId) {
-            try {
-              const vehicles = await getDriverVehicles(report.driverId);
-              if (vehicles.length > 0) {
-                fetchedPlateNumber = vehicles[0].plateNumber;
-              } else {
-                fetchedPlateNumber = report.plateNumber || report.vehicleNumber || "";
-              }
-            } catch (error) {
-              console.error(`Error fetching vehicle for driver ${report.driverId}:`, error);
-              fetchedPlateNumber = report.plateNumber || report.vehicleNumber || "";
-            }
-          }
-          return {
-            ...report,
-            fetchedPlateNumber,
-          };
-        })
-      );
+      // Add fetchedPlateNumber from plateNumber field
+      const reportsWithPlateNumbers = data.map((report: any) => {
+        return {
+          ...report,
+          fetchedPlateNumber: report.plateNumber || report.vehicleNumber || "",
+        };
+      });
 
       setReports(reportsWithPlateNumbers);
     } catch (error) {
@@ -157,24 +121,6 @@ export default function ComplaintsPage() {
       toast.error("Failed to load complaints");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleStatusUpdate = async () => {
-    if (!selectedReport) return;
-
-    try {
-      setIsUpdating(true);
-      await updateReportStatus(selectedReport.id, newStatus);
-      toast.success("Complaint status updated successfully!");
-      setIsStatusDialogOpen(false);
-      setSelectedReport(null);
-      fetchReports();
-    } catch (error) {
-      console.error("Error updating status:", error);
-      toast.error("Failed to update complaint status");
-    } finally {
-      setIsUpdating(false);
     }
   };
 
@@ -190,7 +136,7 @@ export default function ComplaintsPage() {
   return (
     <>
       <Header />
-      <div className="max-w-7xl mx-auto px-6 py-8 w-full">
+      <div className="max-w-5xl mx-auto px-6 py-8 w-full">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Complaints</h1>
           <p className="text-gray-600 mt-2">
@@ -211,59 +157,6 @@ export default function ComplaintsPage() {
           />
         </div>
       </div>
-
-      {/* Status Update Dialog */}
-      <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Complaint Status</DialogTitle>
-          </DialogHeader>
-
-          {selectedReport && (
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-600">Report Type</p>
-                <p className="font-semibold capitalize">{selectedReport.reportType}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-600">Current Status</p>
-                <p className="font-semibold capitalize">{selectedReport.status}</p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">New Status</label>
-                <Select
-                  value={newStatus}
-                  onValueChange={(value: any) => setNewStatus(value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select new status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="investigating">Investigating</SelectItem>
-                    <SelectItem value="resolved">Resolved</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsStatusDialogOpen(false)}
-              disabled={isUpdating}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleStatusUpdate} disabled={isUpdating}>
-              {isUpdating ? "Updating..." : "Update Status"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

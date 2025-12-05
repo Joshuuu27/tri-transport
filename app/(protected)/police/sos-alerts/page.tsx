@@ -18,12 +18,18 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { AlertTriangle, MapPin, Phone, Mail } from "lucide-react";
-import { SOSAlert, getAllActiveSOSAlerts, updateSOSAlertStatus } from "@/lib/services/SOSService";
+import { AlertTriangle, MapPin, Phone, Mail, MoreHorizontal, Eye } from "lucide-react";
+import { SOSAlert, updateSOSAlertStatus } from "@/lib/services/SOSService";
 import { LoadingScreen } from "@/components/common/loading-component";
 import { toast } from "react-toastify";
 import Header from "@/components/police/police-header";
 import { useSOSAlertContext } from "@/app/context/SOSAlertContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function SOSAlertsPage() {
   const { setHasNewAlert: setContextHasNewAlert } = useSOSAlertContext();
@@ -97,17 +103,25 @@ export default function SOSAlertsPage() {
       cell: ({ row }) => {
         const alert = row.original;
         return (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setSelectedAlert(alert);
-              setNewStatus(alert.status);
-              setIsStatusDialogOpen(true);
-            }}
-          >
-            View Details
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  setSelectedAlert(alert);
+                  setNewStatus(alert.status);
+                  setIsStatusDialogOpen(true);
+                }}
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                View Details
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         );
       },
     },
@@ -173,20 +187,23 @@ export default function SOSAlertsPage() {
 
   const fetchAlerts = async () => {
     try {
-      const data = await getAllActiveSOSAlerts();
+      // Fetch all SOS alerts from the API (regardless of status)
+      const response = await fetch("/api/police/sos-alerts");
+      if (!response.ok) throw new Error("Failed to fetch alerts");
+      const data = await response.json();
       
       // Check for new alerts within 2 minutes
       const now = new Date();
       const twoMinutesAgo = new Date(now.getTime() - 2 * 60 * 1000);
       
-      const newAlerts = data.filter((alert) => {
+      const newAlerts = data.filter((alert: any) => {
         const alertTime = new Date(alert.timestamp);
         return alertTime > twoMinutesAgo;
       });
 
       // Compare with previous alerts to detect new ones
       const previousAlertIds = new Set(previousAlertsRef.current.map((a) => a.id));
-      const actualNewAlerts = newAlerts.filter((alert) => !previousAlertIds.has(alert.id));
+      const actualNewAlerts = newAlerts.filter((alert: any) => !previousAlertIds.has(alert.id));
 
       // Trigger notification if there are new alerts
       if (actualNewAlerts.length > 0) {
@@ -280,17 +297,15 @@ export default function SOSAlertsPage() {
     );
   }
 
-  const activeAlerts = alerts.filter((alert) => alert.status === "active");
-
   return (
     <>
       <Header />
-      <div className="max-w-7xl mx-auto px-6 py-8 w-full">
+      <div className="max-w-5xl mx-auto px-6 py-8 w-full">
         <div className="flex justify-between items-start mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">SOS Alerts</h1>
             <p className="text-gray-600 mt-2">
-              Active emergency alerts from users ({activeAlerts.length})
+              Emergency alerts from users ({alerts.length})
             </p>
           </div>
           <div className="flex gap-2">
@@ -317,12 +332,12 @@ export default function SOSAlertsPage() {
           </div>
         </div>
 
-        {activeAlerts.length > 0 && (
+        {alerts.length > 0 && (
           <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-600 rounded">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-red-600" />
               <span className="font-semibold text-red-700">
-                {activeAlerts.length} active emergency alert{activeAlerts.length > 1 ? "s" : ""}
+                {alerts.length} emergency alert{alerts.length > 1 ? "s" : ""}
               </span>
             </div>
           </div>

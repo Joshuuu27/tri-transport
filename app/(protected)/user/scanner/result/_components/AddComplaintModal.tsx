@@ -25,6 +25,7 @@ import { toast } from "react-toastify";
 import { submitReportCase, ReportCaseInput } from "@/lib/services/ReportService";
 import { getDriverLicense } from "@/lib/services/DriverLicenseService";
 import { getDriverVehicles } from "@/lib/services/VehicleService";
+import { compressAndEncodeImage, getFileSizeInMB } from "@/lib/utils/imageUtils";
 import { Loader, Camera, Upload, X } from "lucide-react";
 import { useRef } from "react";
 
@@ -206,66 +207,46 @@ export default function AddComplaintModal({
       }
 
       console.log("Starting complaint submission...");
-      console.log("Image files to upload:", imageFiles.length);
+      console.log("Image files to encode:", imageFiles.length);
 
-      // Upload images to Firebase Storage if any
+      // Convert images to base64 strings (store in Firestore instead of Firebase Storage)
       const imageUrls: string[] = [];
+      let encodingWarnings = 0;
+
       for (const file of imageFiles) {
         try {
-          console.log(`Uploading image: ${file.name} (${file.size} bytes)`);
-          const formDataObj = new FormData();
-          formDataObj.append("file", file);
-          formDataObj.append("type", "report");
+          console.log(`Encoding image: ${file.name} (${file.size} bytes)`);
 
-          const uploadRes = await fetch("/api/upload", {
-            method: "POST",
-            body: formDataObj,
-          });
-
-          console.log(`Upload response status: ${uploadRes.status}`);
-
-          if (!uploadRes.ok) {
-            let errorData: any = {};
-            let rawText = "";
-            
-            try {
-              rawText = await uploadRes.text();
-              console.log("Raw response text:", rawText, "Length:", rawText.length);
-              
-              if (rawText) {
-                try {
-                  errorData = JSON.parse(rawText);
-                } catch (jsonError) {
-                  console.error("Could not parse as JSON");
-                  errorData = { error: `HTTP ${uploadRes.status}: ${rawText}` };
-                }
-              } else {
-                errorData = { error: `HTTP ${uploadRes.status}: Empty response` };
-              }
-            } catch (e) {
-              console.error("Error reading response:", e);
-              errorData = { error: `HTTP ${uploadRes.status}: Could not read response` };
-            }
-            
-            console.error("Upload error response:", errorData, "Status:", uploadRes.status);
-            toast.warning(`Failed to upload ${file.name}: ${errorData.error || errorData.message || `HTTP ${uploadRes.status}`}`);
+          // Check file size (10MB limit for base64)
+          const fileSizeMB = getFileSizeInMB(file);
+          if (fileSizeMB > 10) {
+            console.warn(`File ${file.name} is too large (${fileSizeMB.toFixed(2)}MB), skipping`);
+            toast.info(`Skipped ${file.name} - exceeds 10MB limit`);
+            encodingWarnings++;
             continue;
           }
 
-          const uploadData = await uploadRes.json();
-          console.log("Image uploaded successfully:", uploadData);
-          if (uploadData.url) {
-            imageUrls.push(uploadData.url);
+          // Compress and encode image to base64
+          const base64 = await compressAndEncodeImage(file, 800, 800, 0.6);
+          console.log(`Image encoded successfully: ${base64.length} characters`);
+
+          if (base64) {
+            imageUrls.push(base64);
           } else {
-            console.warn("No URL in upload response:", uploadData);
+            console.warn("Failed to encode image:", file.name);
           }
-        } catch (uploadError) {
-          console.error("Error uploading image:", uploadError);
-          toast.warning(`Error uploading ${file.name}: ${uploadError instanceof Error ? uploadError.message : "Unknown error"}`);
+        } catch (encodeError) {
+          console.error("Error encoding image:", encodeError);
+          toast.warning(`Error encoding ${file.name}: ${encodeError instanceof Error ? encodeError.message : "Unknown error"}`);
+          encodingWarnings++;
         }
       }
 
-      console.log("Total images uploaded successfully:", imageUrls.length, imageUrls);
+      if (encodingWarnings > 0 && imageUrls.length === 0) {
+        toast.info("Proceeding without evidence photos due to encoding issues");
+      }
+
+      console.log("Total images encoded successfully:", imageUrls.length);
 
       const reportData: ReportCaseInput & { imageUrls?: string[] } = {
         commuterId: user!.uid,
