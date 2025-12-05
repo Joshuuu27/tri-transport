@@ -60,6 +60,11 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({
       setUser(currentUser);
 
       if (currentUser) {
+        const tokenResult: IdTokenResult =
+          await currentUser.getIdTokenResult(true);
+
+        const userRole = tokenResult.claims
+          .role as
         const tokenResult: IdTokenResult = await currentUser.getIdTokenResult(
           true
         );

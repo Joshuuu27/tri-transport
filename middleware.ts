@@ -67,9 +67,22 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  if (path.startsWith("/cttmo") && role !== "cttmo") {
+    url.pathname = "/unauthorized";
+    return NextResponse.redirect(url);
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
+  matcher: [
+    "/admin/:path*",
+    "/driver/:path*",
+    "/user/:path*",
+    "/franchising/:path*",
+    "/cttmo/:path*",
+    "/login",
+  ],
   matcher: ["/admin/:path*", "/driver/:path*", "/user/:path*","/franchising/:path*","/cttmo/:path*", "/login"],
 };
