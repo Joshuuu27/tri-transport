@@ -28,6 +28,7 @@ import { LoadingScreen } from "@/components/common/loading-component";
 import { toast } from "react-toastify";
 import { useSOSAlertContext } from "@/app/context/SOSAlertContext";
 import { useAuthContext } from "@/app/context/AuthContext";
+import CttmoHeader from "@/components/cttmo/cttmo-header";
 
 export default function CttmoSOSAlertsPage() {
   const { setHasNewAlert: setContextHasNewAlert } = useSOSAlertContext();
@@ -307,6 +308,7 @@ export default function CttmoSOSAlertsPage() {
 
   return (
     <>
+      <CttmoHeader />
       {/* Simple header matching CTTMO look */}
       <header className="w-full border-b bg-background">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
