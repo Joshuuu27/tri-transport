@@ -281,9 +281,63 @@ function coordinatesWithinRadius(
 }
 
 /**
+ * Calculates a match score for a route based on text and geographic similarity.
+ * Higher score = better match.
+ */
+function calculateMatchScore(
+  fromText: string,
+  toText: string,
+  matrixFrom: string,
+  matrixTo: string,
+  fromCoords: Coordinates | null,
+  toCoords: Coordinates | null,
+  matrixFromCoords: Coordinates | null,
+  matrixToCoords: Coordinates | null
+): number {
+  let score = 0;
+
+  // Text matching scores
+  if (locationMatches(fromText, matrixFrom)) {
+    score += 10; // Exact or fuzzy text match for "from"
+  }
+  if (locationMatches(toText, matrixTo)) {
+    score += 10; // Exact or fuzzy text match for "to"
+  }
+
+  // Geographic matching scores (closer = higher score)
+  if (fromCoords && matrixFromCoords) {
+    const fromDistance = calculateDistance(fromCoords, matrixFromCoords);
+    if (fromDistance <= 100) {
+      score += 20; // Very close (within 100m)
+    } else if (fromDistance <= 500) {
+      score += 15; // Close (within 500m)
+    } else if (fromDistance <= 1000) {
+      score += 10; // Fairly close (within 1km)
+    } else if (fromDistance <= 2000) {
+      score += 5; // Somewhat close (within 2km)
+    }
+  }
+
+  if (toCoords && matrixToCoords) {
+    const toDistance = calculateDistance(toCoords, matrixToCoords);
+    if (toDistance <= 100) {
+      score += 20; // Very close (within 100m)
+    } else if (toDistance <= 500) {
+      score += 15; // Close (within 500m)
+    } else if (toDistance <= 1000) {
+      score += 10; // Fairly close (within 1km)
+    } else if (toDistance <= 2000) {
+      score += 5; // Somewhat close (within 2km)
+    }
+  }
+
+  return score;
+}
+
+/**
  * Looks up tariff fare for a given route (from -> to).
- * Uses both text matching and geographic coordinate matching (100m radius).
- * Returns the fare if found, null otherwise.
+ * Uses both text matching and geographic coordinate matching with fallback to closest match.
+ * Returns the fare if found (exact or close match), null if no reasonable match found.
  * 
  * @param from - Starting location (string or coordinates)
  * @param to - Destination location (string or coordinates)
@@ -324,15 +378,23 @@ export async function lookupTariffFare(
   // Load tariff data (from Firestore or JSON)
   const fareMatrix = await getTariffData();
 
+  let bestMatch: { fare: number; score: number } | null = null;
+  const MIN_MATCH_SCORE = 10; // Minimum score to consider a match
+
   // Search through fare matrix
   for (const matrixItem of fareMatrix) {
+    // Get coordinates for matrix "from" location
+    const matrixFromCoords = fromCoordinates 
+      ? await getLocationCoordinates(matrixItem.from)
+      : null;
+
     // Check if "from" location matches (text or geographic)
     const fromMatchesText = locationMatches(from, matrixItem.from);
     let fromMatchesGeo = false;
     
-    if (fromCoordinates) {
-      const matrixFromCoords = await getLocationCoordinates(matrixItem.from);
-      fromMatchesGeo = coordinatesWithinRadius(fromCoordinates, matrixFromCoords, 100);
+    if (fromCoordinates && matrixFromCoords) {
+      // Use larger radius for "close" matching (500m instead of 100m)
+      fromMatchesGeo = coordinatesWithinRadius(fromCoordinates, matrixFromCoords, 500);
     }
 
     if (fromMatchesText || fromMatchesGeo) {
@@ -345,19 +407,88 @@ export async function lookupTariffFare(
         for (const routeDest of routeDestinations) {
           const toMatchesText = locationMatches(to, routeDest);
           let toMatchesGeo = false;
+          let routeDestCoords: Coordinates | null = null;
           
           if (toCoordinates) {
-            const routeDestCoords = await getLocationCoordinates(routeDest);
-            toMatchesGeo = coordinatesWithinRadius(toCoordinates, routeDestCoords, 100);
+            routeDestCoords = await getLocationCoordinates(routeDest);
+            // Use larger radius for "close" matching (500m instead of 100m)
+            toMatchesGeo = routeDestCoords 
+              ? coordinatesWithinRadius(toCoordinates, routeDestCoords, 500)
+              : false;
           }
 
+          // Exact match - return immediately
           if (toMatchesText || toMatchesGeo) {
-            // Found a match, return the fare for the current gas price range
             return route.rates[gasPriceRange];
+          }
+
+          // Calculate match score for potential close match
+          const matchScore = calculateMatchScore(
+            from,
+            to,
+            matrixItem.from,
+            routeDest,
+            fromCoordinates,
+            toCoordinates,
+            matrixFromCoords,
+            routeDestCoords
+          );
+
+          // Track the best match
+          if (matchScore >= MIN_MATCH_SCORE) {
+            if (!bestMatch || matchScore > bestMatch.score) {
+              bestMatch = {
+                fare: route.rates[gasPriceRange],
+                score: matchScore,
+              };
+            }
+          }
+        }
+      }
+    } else {
+      // Even if "from" doesn't match exactly, check if it's close
+      if (fromCoordinates && matrixFromCoords) {
+        const fromDistance = calculateDistance(fromCoordinates, matrixFromCoords);
+        
+        // If "from" is within 2km, check all routes for this origin
+        if (fromDistance <= 2000) {
+          for (const route of matrixItem.routes) {
+            const routeDestinations = route.to.split(",").map(dest => dest.trim());
+            
+            for (const routeDest of routeDestinations) {
+              const routeDestCoords = toCoordinates 
+                ? await getLocationCoordinates(routeDest)
+                : null;
+              
+              const matchScore = calculateMatchScore(
+                from,
+                to,
+                matrixItem.from,
+                routeDest,
+                fromCoordinates,
+                toCoordinates,
+                matrixFromCoords,
+                routeDestCoords
+              );
+
+              if (matchScore >= MIN_MATCH_SCORE) {
+                if (!bestMatch || matchScore > bestMatch.score) {
+                  bestMatch = {
+                    fare: route.rates[gasPriceRange],
+                    score: matchScore,
+                  };
+                }
+              }
+            }
           }
         }
       }
     }
+  }
+
+  // Return the best match if we found one with a reasonable score
+  if (bestMatch && bestMatch.score >= MIN_MATCH_SCORE) {
+    return bestMatch.fare;
   }
 
   return null;
