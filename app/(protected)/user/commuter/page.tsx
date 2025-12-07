@@ -11,6 +11,7 @@ export default function Home() {
   const [destCoords, setDestCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [startCoords, setStartCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [fare, setFare] = useState<number | null>(null)
+  const [isCalculatingFare, setIsCalculatingFare] = useState(false)
   const [isTracking, setIsTracking] = useState(false)
   const [mapClickMode, setMapClickMode] = useState<"from" | "to">("from")
   const tripSavedRef = useRef(false)
@@ -181,6 +182,11 @@ export default function Home() {
     setFare(fareValue)
   }, [])
 
+  // Callback to receive fare calculating state from MapComponent
+  const handleFareCalculating = useCallback((calculating: boolean) => {
+    setIsCalculatingFare(calculating)
+  }, [])
+
   // Set starting point to user's current location
   const handleRequestCurrentLocation = useCallback(() => {
     // Don't allow changing starting point if tracking is active
@@ -315,11 +321,14 @@ export default function Home() {
           startingPoint={startingPoint}
           setStartingPoint={setStartingPointSafe}
           fare={fare}
+          isCalculatingFare={isCalculatingFare}
           onRequestCurrentLocation={handleRequestCurrentLocation}
           isTracking={isTracking}
           onToggleTracking={handleToggleTracking}
           mapClickMode={mapClickMode}
           onMapClickModeChange={setMapClickMode}
+          onStartingPointCoordsChange={setStartCoords}
+          onDestinationCoordsChange={setDestCoords}
         />
       </div>
 
@@ -331,6 +340,7 @@ export default function Home() {
           startCoords={startCoords}
           destCoords={destCoords}
           onFareChange={handleFareChange}
+          onFareCalculating={handleFareCalculating}
           onMapClick={handleMapClick}
           startTracking={isTracking}
         />
@@ -344,11 +354,14 @@ export default function Home() {
           startingPoint={startingPoint}
           setStartingPoint={setStartingPointSafe}
           fare={fare}
+          isCalculatingFare={isCalculatingFare}
           onRequestCurrentLocation={handleRequestCurrentLocation}
           isTracking={isTracking}
           onToggleTracking={handleToggleTracking}
           mapClickMode={mapClickMode}
           onMapClickModeChange={setMapClickMode}
+          onStartingPointCoordsChange={setStartCoords}
+          onDestinationCoordsChange={setDestCoords}
         />
       </div>
     </div>
