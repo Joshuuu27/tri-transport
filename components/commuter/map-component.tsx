@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
+import { lookupTariffFare, getDefaultFare } from "@/lib/tariff-utils";
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 const BASEFARE = parseFloat(process.env.NEXT_PUBLIC_BASEFARE || '15');
@@ -22,11 +23,12 @@ interface MapComponentProps {
   startCoords?: { lat: number; lng: number } | null;
   destCoords?: { lat: number; lng: number } | null;
   onFareChange?: (fare: number | null) => void;
+  onFareCalculating?: (isCalculating: boolean) => void;
   onMapClick?: (data: { lat: number; lng: number; address?: string }) => void;
   startTracking?: boolean;
 }
 
-export default function MapComponent({ startingPoint, destination, startCoords, destCoords, onFareChange, onMapClick, startTracking }: MapComponentProps) {
+export default function MapComponent({ startingPoint, destination, startCoords, destCoords, onFareChange, onFareCalculating, onMapClick, startTracking }: MapComponentProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const directionsRenderer = useRef<any>(null);
@@ -352,6 +354,124 @@ export default function MapComponent({ startingPoint, destination, startCoords, 
       setupMapClickListener();
     }
   }, [onMapClick, setupMapClickListener]);
+
+  // Update origin marker when startCoords changes
+  useEffect(() => {
+    if (!(window as any).google || !mapInstance.current) return;
+    if (!startCoords || !startCoords.lat || !startCoords.lng) {
+      // Remove marker if coordinates are cleared
+      if (originMarker.current) {
+        originMarker.current.setMap(null);
+        originMarker.current = null;
+      }
+      if (originInfoWindow.current) {
+        originInfoWindow.current.close();
+        originInfoWindow.current = null;
+      }
+      return;
+    }
+
+    const position = new (window as any).google.maps.LatLng(startCoords.lat, startCoords.lng);
+
+    if (originMarker.current) {
+      // Update existing marker position
+      originMarker.current.setPosition(position);
+    } else {
+      // Create new marker
+      originMarker.current = new (window as any).google.maps.Marker({
+        position: position,
+        map: mapInstance.current,
+        title: startingPoint || "Starting Point",
+        icon: {
+          path: (window as any).google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: "#4285F4",
+          fillOpacity: 1,
+          strokeWeight: 2,
+          strokeColor: "#ffffff",
+        },
+        zIndex: 1000,
+      });
+
+      // Create info window for origin marker
+      originInfoWindow.current = new (window as any).google.maps.InfoWindow({
+        content: `<div style="padding: 8px;"><strong>From:</strong><br/>${startingPoint || "Starting Point"}</div>`,
+      });
+
+      // Add click listener to show info window
+      originMarker.current.addListener("click", () => {
+        if (originInfoWindow.current) {
+          originInfoWindow.current.open(mapInstance.current, originMarker.current);
+        }
+      });
+    }
+
+    // Update info window content if address changed
+    if (originInfoWindow.current && startingPoint) {
+      originInfoWindow.current.setContent(
+        `<div style="padding: 8px;"><strong>From:</strong><br/>${startingPoint}</div>`
+      );
+    }
+  }, [startCoords, startingPoint]);
+
+  // Update destination marker when destCoords changes
+  useEffect(() => {
+    if (!(window as any).google || !mapInstance.current) return;
+    if (!destCoords || !destCoords.lat || !destCoords.lng) {
+      // Remove marker if coordinates are cleared
+      if (destinationMarker.current) {
+        destinationMarker.current.setMap(null);
+        destinationMarker.current = null;
+      }
+      if (destinationInfoWindow.current) {
+        destinationInfoWindow.current.close();
+        destinationInfoWindow.current = null;
+      }
+      return;
+    }
+
+    const position = new (window as any).google.maps.LatLng(destCoords.lat, destCoords.lng);
+
+    if (destinationMarker.current) {
+      // Update existing marker position
+      destinationMarker.current.setPosition(position);
+    } else {
+      // Create new marker
+      destinationMarker.current = new (window as any).google.maps.Marker({
+        position: position,
+        map: mapInstance.current,
+        title: destination || "Destination",
+        icon: {
+          path: (window as any).google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: "#EA4335",
+          fillOpacity: 1,
+          strokeWeight: 2,
+          strokeColor: "#ffffff",
+        },
+        zIndex: 1000,
+      });
+
+      // Create info window for destination marker
+      destinationInfoWindow.current = new (window as any).google.maps.InfoWindow({
+        content: `<div style="padding: 8px;"><strong>To:</strong><br/>${destination || "Destination"}</div>`,
+      });
+
+      // Add click listener to show info window
+      destinationMarker.current.addListener("click", () => {
+        if (destinationInfoWindow.current) {
+          destinationInfoWindow.current.open(mapInstance.current, destinationMarker.current);
+        }
+      });
+    }
+
+    // Update info window content if address changed
+    if (destinationInfoWindow.current && destination) {
+      destinationInfoWindow.current.setContent(
+        `<div style="padding: 8px;"><strong>To:</strong><br/>${destination}</div>`
+      );
+    }
+  }, [destCoords, destination]);
   // Update route when startingPoint or destination changes
   // But don't update if we're tracking and the change is from GPS updates
   useEffect(() => {
@@ -359,6 +479,7 @@ export default function MapComponent({ startingPoint, destination, startCoords, 
     if (!startingPoint || !destination) {
       directionsRenderer.current.set("directions", null);
       if (onFareChange) onFareChange(null);
+      if (onFareCalculating) onFareCalculating(false);
       return;
     }
     
@@ -422,17 +543,47 @@ export default function MapComponent({ startingPoint, destination, startCoords, 
                   } catch (e) {
                     currentRoutePath.current = null;
                   }
-                  // Calculate fare based on distance (e.g., 15 PHP base + 10 PHP per km)
+                  // Calculate fare: first try tariff lookup, then fallback to default calculation
                   const route = result.routes[0];
                   const leg = route.legs[0];
                   const distanceKm = leg.distance.value / 1000;
-                  const fare = BASEFARE + distanceKm * PERKM;
-                  if (onFareChange) onFareChange(Math.round(fare));
+                  
+                  // Notify that fare calculation is starting
+                  if (onFareCalculating) onFareCalculating(true);
+                  
+                  // Try to get fare from tariff based on location and coordinates
+                  // Uses both text matching and geographic coordinate matching (100m radius)
+                  // Automatically fetches current gas price from Firestore/localStorage
+                  lookupTariffFare(
+                    startingPoint,
+                    destination,
+                    startCoords || null,
+                    destCoords || null
+                  ).then((tariffFare) => {
+                    let fare: number;
+                    if (tariffFare !== null) {
+                      // Use tariff fare if found
+                      fare = tariffFare;
+                    } else {
+                      // Fallback to default calculation using NEXT_PUBLIC_BASEFARE and NEXT_PUBLIC_PERKM
+                      fare = getDefaultFare(distanceKm);
+                    }
+                    
+                    if (onFareChange) onFareChange(Math.round(fare));
+                    if (onFareCalculating) onFareCalculating(false);
+                  }).catch((error) => {
+                    console.warn("Error looking up tariff fare:", error);
+                    // Fallback to default calculation on error
+                    const fare = getDefaultFare(distanceKm);
+                    if (onFareChange) onFareChange(Math.round(fare));
+                    if (onFareCalculating) onFareCalculating(false);
+                  });
             } else {
               directionsRenderer.current.set("directions", null);
               // Provide clearer logging for common statuses
               console.warn("DirectionsService failed: ", status);
               if (onFareChange) onFareChange(null);
+              if (onFareCalculating) onFareCalculating(false);
               if (status === "ZERO_RESULTS" || status === "NOT_FOUND") {
                 // Informative console message; UI can be improved to show toasts
                 console.info("Directions request returned no results or locations not found.");
@@ -445,8 +596,9 @@ export default function MapComponent({ startingPoint, destination, startCoords, 
         console.warn("Geocoding failed for origin/destination:", errStatus);
         directionsRenderer.current.set("directions", null);
         if (onFareChange) onFareChange(null);
+        if (onFareCalculating) onFareCalculating(false);
       });
-  }, [startingPoint, destination, startCoords, destCoords, onFareChange]);
+  }, [startingPoint, destination, startCoords, destCoords, onFareChange, onFareCalculating]);
 
   return (
     <div className="flex-1 relative overflow-hidden w-full h-full">

@@ -11,6 +11,7 @@ export default function Home() {
   const [destCoords, setDestCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [startCoords, setStartCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [fare, setFare] = useState<number | null>(null)
+  const [isCalculatingFare, setIsCalculatingFare] = useState(false)
   const [isTracking, setIsTracking] = useState(false)
   const [mapClickMode, setMapClickMode] = useState<"from" | "to">("from")
   const tripSavedRef = useRef(false)
@@ -60,6 +61,53 @@ export default function Home() {
               ) {
                 const result = results[0]
 
+                // Helper function to clean Plus Code from address
+                const cleanPlusCode = (address: string): string => {
+                  // Remove Plus Code pattern (e.g., "V2R5+375" or "V2R5+375,")
+                  const plusCodeMatch = address.match(/^([A-Z0-9]{2,}\+[A-Z0-9]{2,}),?\s*/i)
+                  if (plusCodeMatch) {
+                    const cleaned = address
+                      .replace(/^[A-Z0-9]{2,}\+[A-Z0-9]{2,},?\s*/i, "")
+                      .trim()
+                    return cleaned || address
+                  }
+                  return address
+                }
+
+                // Helper function to extract meaningful address parts
+                const extractAddress = (components: any[]): string | null => {
+                  // Priority order: street_number + route, then route, then neighborhood, then locality
+                  let streetNumber = ""
+                  let route = ""
+                  let neighborhood = ""
+                  let locality = ""
+
+                  for (const component of components || []) {
+                    if (component.types.includes("street_number")) {
+                      streetNumber = component.long_name
+                    } else if (component.types.includes("route")) {
+                      route = component.long_name
+                    } else if (component.types.includes("neighborhood") || component.types.includes("sublocality")) {
+                      neighborhood = component.long_name
+                    } else if (component.types.includes("locality")) {
+                      locality = component.long_name
+                    }
+                  }
+
+                  // Build address from parts
+                  if (streetNumber && route) {
+                    return `${streetNumber} ${route}`
+                  } else if (route) {
+                    return route
+                  } else if (neighborhood) {
+                    return neighborhood
+                  } else if (locality) {
+                    return locality
+                  }
+
+                  return null
+                }
+
                 // Prefer establishment / POI / premise name
                 let placeName: string | null = null
                 for (const component of result.address_components || []) {
@@ -78,6 +126,13 @@ export default function Home() {
                   return
                 }
 
+                // Try to extract meaningful address from components
+                const extractedAddress = extractAddress(result.address_components || [])
+                if (extractedAddress) {
+                  resolve({ lat, lng, label: extractedAddress })
+                  return
+                }
+
                 // If there is a place_id, try PlacesService for a nicer name
                 if (
                   result.place_id &&
@@ -88,7 +143,7 @@ export default function Home() {
                     .places.PlacesService(mapDiv)
                   const request = {
                     placeId: result.place_id,
-                    fields: ["name", "formatted_address"],
+                    fields: ["name", "formatted_address", "address_components"],
                   }
 
                   placesService.getDetails(
@@ -98,57 +153,80 @@ export default function Home() {
                         placeStatus ===
                           (window as any).google.maps.places
                             .PlacesServiceStatus.OK &&
-                        place &&
-                        place.name
+                        place
                       ) {
-                        resolve({ lat, lng, label: place.name })
-                      } else {
-                        const formatted = result.formatted_address || ""
-                        const plusCodeMatch =
-                          formatted.match(
-                            /^([A-Z0-9]+\+[A-Z0-9]+),?\s*/
-                          )
-                        let address = formatted
-
-                        if (plusCodeMatch) {
-                          const withoutPlusCode = formatted
-                            .replace(
-                              /^[A-Z0-9]+\+[A-Z0-9]+,?\s*/,
-                              ""
-                            )
-                            .trim()
-                          if (withoutPlusCode) {
-                            const parts = withoutPlusCode.split(",")
-                            address = parts[0].trim() || formatted
-                          }
+                        // Prefer place name
+                        if (place.name && !place.name.match(/^[A-Z0-9]{2,}\+[A-Z0-9]{2,}/i)) {
+                          resolve({ lat, lng, label: place.name })
+                          return
                         }
 
-                        resolve({ lat, lng, label: address })
+                        // Try to extract from address components
+                        const extracted = extractAddress(place.address_components || [])
+                        if (extracted) {
+                          resolve({ lat, lng, label: extracted })
+                          return
+                        }
+
+                        // Clean formatted address
+                        const formatted = place.formatted_address || result.formatted_address || ""
+                        const cleaned = cleanPlusCode(formatted)
+                        
+                        if (cleaned && !cleaned.match(/^[A-Z0-9]{2,}\+[A-Z0-9]{2,}/i)) {
+                          // Take first meaningful part (before first comma)
+                          const parts = cleaned.split(",")
+                          const firstPart = parts[0]?.trim()
+                          if (firstPart && firstPart.length > 3) {
+                            resolve({ lat, lng, label: firstPart })
+                            return
+                          }
+                        }
                       }
+
+                      // Fallback: clean the original formatted address
+                      const formatted = result.formatted_address || ""
+                      const cleaned = cleanPlusCode(formatted)
+                      
+                      if (cleaned && !cleaned.match(/^[A-Z0-9]{2,}\+[A-Z0-9]{2,}/i)) {
+                        const parts = cleaned.split(",")
+                        const firstPart = parts[0]?.trim()
+                        if (firstPart && firstPart.length > 3) {
+                          resolve({ lat, lng, label: firstPart })
+                          return
+                        }
+                      }
+
+                      // Last resort: use coordinates if we can't get a good name
+                      resolve({ lat, lng, label: `${lat.toFixed(6)},${lng.toFixed(6)}` })
                     }
                   )
                 } else {
                   // No place_id – clean up formatted_address / plus code
                   const formatted = result.formatted_address || ""
-                  const plusCodeMatch =
-                    formatted.match(/^[A-Z0-9]+\+[A-Z0-9]+,?\s*/)
-                  let address = formatted
-
-                  if (plusCodeMatch) {
-                    const withoutPlusCode = formatted
-                      .replace(/^[A-Z0-9]+\+[A-Z0-9]+,?\s*/, "")
-                      .trim()
-                    if (withoutPlusCode) {
-                      const parts = withoutPlusCode.split(",")
-                      address = parts[0].trim() || formatted
+                  const cleaned = cleanPlusCode(formatted)
+                  
+                  if (cleaned && !cleaned.match(/^[A-Z0-9]{2,}\+[A-Z0-9]{2,}/i)) {
+                    const parts = cleaned.split(",")
+                    const firstPart = parts[0]?.trim()
+                    if (firstPart && firstPart.length > 3) {
+                      resolve({ lat, lng, label: firstPart })
+                      return
                     }
                   }
 
-                  resolve({ lat, lng, label: address })
+                  // Try to extract from address components
+                  const extracted = extractAddress(result.address_components || [])
+                  if (extracted) {
+                    resolve({ lat, lng, label: extracted })
+                    return
+                  }
+
+                  // Last resort: use coordinates
+                  resolve({ lat, lng, label: `${lat.toFixed(6)},${lng.toFixed(6)}` })
                 }
               } else {
                 // Reverse geocoding failed – fall back to coordinates
-                resolve({ lat, lng, label: `${lat},${lng}` })
+                resolve({ lat, lng, label: `${lat.toFixed(6)},${lng.toFixed(6)}` })
               }
             }
           )
@@ -164,6 +242,23 @@ export default function Home() {
   useEffect(() => {
     mapClickModeRef.current = mapClickMode
   }, [mapClickMode])
+
+  // Automatically get user's current location on page load
+  useEffect(() => {
+    // Only get location if starting point is not already set
+    if (!startingPoint && !isTracking) {
+      getCurrentLocationWithLabel()
+        .then(({ lat, lng, label }) => {
+          setStartCoords({ lat, lng })
+          setStartingPoint(label)
+        })
+        .catch((error) => {
+          console.warn("Could not get user location on page load:", error)
+          // Don't show alert on page load, just log it
+        })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run once on mount
   
   // Wrapper for setStartingPoint that prevents changes during tracking
   const setStartingPointSafe = useCallback((value: string) => {
@@ -179,6 +274,11 @@ export default function Home() {
   // Callback to receive fare from MapComponent
   const handleFareChange = useCallback((fareValue: number | null) => {
     setFare(fareValue)
+  }, [])
+
+  // Callback to receive fare calculating state from MapComponent
+  const handleFareCalculating = useCallback((calculating: boolean) => {
+    setIsCalculatingFare(calculating)
   }, [])
 
   // Set starting point to user's current location
@@ -315,11 +415,14 @@ export default function Home() {
           startingPoint={startingPoint}
           setStartingPoint={setStartingPointSafe}
           fare={fare}
+          isCalculatingFare={isCalculatingFare}
           onRequestCurrentLocation={handleRequestCurrentLocation}
           isTracking={isTracking}
           onToggleTracking={handleToggleTracking}
           mapClickMode={mapClickMode}
           onMapClickModeChange={setMapClickMode}
+          onStartingPointCoordsChange={setStartCoords}
+          onDestinationCoordsChange={setDestCoords}
         />
       </div>
 
@@ -331,6 +434,7 @@ export default function Home() {
           startCoords={startCoords}
           destCoords={destCoords}
           onFareChange={handleFareChange}
+          onFareCalculating={handleFareCalculating}
           onMapClick={handleMapClick}
           startTracking={isTracking}
         />
@@ -344,11 +448,14 @@ export default function Home() {
           startingPoint={startingPoint}
           setStartingPoint={setStartingPointSafe}
           fare={fare}
+          isCalculatingFare={isCalculatingFare}
           onRequestCurrentLocation={handleRequestCurrentLocation}
           isTracking={isTracking}
           onToggleTracking={handleToggleTracking}
           mapClickMode={mapClickMode}
           onMapClickModeChange={setMapClickMode}
+          onStartingPointCoordsChange={setStartCoords}
+          onDestinationCoordsChange={setDestCoords}
         />
       </div>
     </div>

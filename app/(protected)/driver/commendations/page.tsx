@@ -18,10 +18,13 @@ export default function DriverCommendationsPage() {
   const itemsPerPage = 5;
 
   useEffect(() => {
-    if (!user?.uid) return;
-
     const fetchCommendations = async () => {
       try {
+        if (!user?.uid) {
+          setLoading(false);
+          return;
+        }
+
         // Fetch commendations for this driver
         const data = await getDriverCommendations(user.uid);
         setCommendations(data);

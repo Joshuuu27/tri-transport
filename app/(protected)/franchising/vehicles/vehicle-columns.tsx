@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Eye, FileText, Award, Edit2 } from "lucide-react";
+import { MoreHorizontal, Eye, FileText, Award, Edit2, Trash2, History } from "lucide-react";
 
 export interface OperatorVehicle {
   id: string;
@@ -29,13 +29,29 @@ interface VehicleColumnsProps {
   onViewReports: (vehicle: OperatorVehicle) => void;
   onViewCommendations: (vehicle: OperatorVehicle) => void;
   onEdit: (vehicle: OperatorVehicle) => void;
+  onDelete: (vehicle: OperatorVehicle) => void;
+  onViewRenewalHistory: (vehicle: OperatorVehicle) => void;
 }
 
 export const createVehicleColumns = ({
   onViewReports,
   onViewCommendations,
   onEdit,
+  onDelete,
+  onViewRenewalHistory,
 }: VehicleColumnsProps): ColumnDef<OperatorVehicle>[] => [
+  {
+    accessorKey: "vehicleType",
+    header: "Vehicle Type",
+    cell: ({ row }) => {
+      const vehicleType = row.getValue("vehicleType");
+      return (
+        <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+          {String(vehicleType || "N/A")}
+        </span>
+      );
+    },
+  },
   {
     accessorKey: "plateNumber",
     header: "Plate Number",
@@ -57,32 +73,6 @@ export const createVehicleColumns = ({
     },
   },
   {
-    accessorKey: "vehicleType",
-    header: "Vehicle Type",
-    cell: ({ row }) => {
-      const vehicleType = row.getValue("vehicleType");
-      return (
-        <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
-          {String(vehicleType || "N/A")}
-        </span>
-      );
-    },
-  },
-  {
-    accessorKey: "franchiseNumber",
-    header: "Franchise Number",
-    cell: ({ row }) => {
-      const franchiseNumber = row.getValue("franchiseNumber");
-      return franchiseNumber ? (
-        <span className="font-semibold text-purple-600">
-          {String(franchiseNumber)}
-        </span>
-      ) : (
-        <span className="text-gray-400">N/A</span>
-      );
-    },
-  },
-  {
     accessorKey: "assignedDriverName",
     header: "Driver Name",
     cell: ({ row }) => {
@@ -95,11 +85,15 @@ export const createVehicleColumns = ({
     },
   },
   {
-    accessorKey: "driverLicenseNumber",
-    header: "License Number",
+    accessorKey: "operatorName",
+    header: "Operator Name",
     cell: ({ row }) => {
-      const licenseNumber = row.getValue("driverLicenseNumber");
-      return <span>{String(licenseNumber || "N/A")}</span>;
+      const operatorName = row.getValue("operatorName");
+      return (
+        <span className="capitalize">
+          {String(operatorName || "N/A")}
+        </span>
+      );
     },
   },
   {
@@ -116,17 +110,24 @@ export const createVehicleColumns = ({
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem
+          <DropdownMenuContent align="end" className="w-56">
+            {/* <DropdownMenuItem
               onClick={() => onEdit(vehicle)}
               className="flex items-center gap-2"
             >
               <Edit2 className="w-4 h-4" />
               Edit Vehicle Details
+            </DropdownMenuItem> */}
+            <DropdownMenuItem
+              onClick={() => onViewRenewalHistory(vehicle)}
+              className="flex items-center gap-2"
+            >
+              <History className="w-4 h-4" />
+              Renewal History
             </DropdownMenuItem>
             {hasDriver ? (
               <>
-                <DropdownMenuItem
+                {/* <DropdownMenuItem
                   onClick={() => onViewReports(vehicle)}
                   className="flex items-center gap-2"
                 >
@@ -139,13 +140,20 @@ export const createVehicleColumns = ({
                 >
                   <Award className="w-4 h-4" />
                   View Commendations
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
               </>
             ) : (
               <div className="px-2 py-1.5 text-sm text-gray-500">
                 No driver assigned
               </div>
             )}
+            {/* <DropdownMenuItem
+              onClick={() => onDelete(vehicle)}
+              className="flex items-center gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Vehicle
+            </DropdownMenuItem> */}
           </DropdownMenuContent>
         </DropdownMenu>
       );

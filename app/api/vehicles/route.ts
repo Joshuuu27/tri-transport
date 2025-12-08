@@ -5,12 +5,18 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const operatorId = searchParams.get("operatorId");
+    const plateNumber = searchParams.get("plateNumber");
 
     let query: any = db.collection("vehicles");
 
     // Filter by operator if operatorId is provided
     if (operatorId) {
       query = query.where("operatorId", "==", operatorId);
+    }
+
+    // Filter by plate number if provided
+    if (plateNumber) {
+      query = query.where("plateNumber", "==", plateNumber);
     }
 
     const snapshot = await query.get();
@@ -50,6 +56,11 @@ export async function GET(req: Request) {
             renewalHistory,
           }).catch(err => console.error("Error updating vehicle:", err));
         }
+
+        console.log(`Vehicle ${vehicleData.plateNumber}:`, {
+          renewalHistory,
+          franchiseExpirationDate,
+        });
 
         // Fetch operator name if operatorId exists
         if (vehicleData.operatorId) {

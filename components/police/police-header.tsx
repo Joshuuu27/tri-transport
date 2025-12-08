@@ -16,7 +16,7 @@ export default function Header() {
   const navigationLinks = [
     { label: "Home", href: "/police" },
     { label: "SOS Alerts", href: "/police/sos-alerts", isSOS: true },
-    { label: "Complaints", href: "/police/complaints" },
+    /* { label: "Complaints", href: "/police/complaints" }, */
     { label: "Settings", href: "/police/settings" },
   ];
 

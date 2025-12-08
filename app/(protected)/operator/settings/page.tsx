@@ -41,6 +41,29 @@ const OperatorSettingsPage = () => {
   const [isLoadingAccount, setIsLoadingAccount] = useState(false);
   const [isLoadingPassword, setIsLoadingPassword] = useState(false);
 
+  // Fetch operator name on component mount
+  React.useEffect(() => {
+    const fetchOperatorName = async () => {
+      if (!user?.uid) return;
+      
+      try {
+        const res = await fetch(`/api/operators/${user.uid}`);
+        if (res.ok) {
+          const operatorData = await res.json();
+          const name = operatorData.name || operatorData.displayName || user?.displayName || "";
+          setAccountData(prev => ({
+            ...prev,
+            displayName: name
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching operator name:", error);
+      }
+    };
+
+    fetchOperatorName();
+  }, [user?.uid]);
+
   const handleAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setAccountData((prev) => ({
