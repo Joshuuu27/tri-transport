@@ -111,13 +111,13 @@ export const createVehicleColumns = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem
+            {/* <DropdownMenuItem
               onClick={() => onEdit(vehicle)}
               className="flex items-center gap-2"
             >
               <Edit2 className="w-4 h-4" />
               Edit Vehicle Details
-            </DropdownMenuItem>
+            </DropdownMenuItem> */}
             <DropdownMenuItem
               onClick={() => onViewRenewalHistory(vehicle)}
               className="flex items-center gap-2"
@@ -127,7 +127,7 @@ export const createVehicleColumns = ({
             </DropdownMenuItem>
             {hasDriver ? (
               <>
-                <DropdownMenuItem
+                {/* <DropdownMenuItem
                   onClick={() => onViewReports(vehicle)}
                   className="flex items-center gap-2"
                 >
@@ -140,20 +140,20 @@ export const createVehicleColumns = ({
                 >
                   <Award className="w-4 h-4" />
                   View Commendations
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
               </>
             ) : (
               <div className="px-2 py-1.5 text-sm text-gray-500">
                 No driver assigned
               </div>
             )}
-            <DropdownMenuItem
+            {/* <DropdownMenuItem
               onClick={() => onDelete(vehicle)}
               className="flex items-center gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
             >
               <Trash2 className="w-4 h-4" />
               Delete Vehicle
-            </DropdownMenuItem>
+            </DropdownMenuItem> */}
           </DropdownMenuContent>
         </DropdownMenu>
       );

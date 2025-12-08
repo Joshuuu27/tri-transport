@@ -5,10 +5,6 @@ import { useAuthContext } from "@/app/context/AuthContext";
 import CttmoHeader from "@/components/cttmo/cttmo-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  SOSAlert,
-  getAllActiveSOSAlerts,
-} from "@/lib/services/SOSService";
 import { AlertTriangle, MoreHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/common/data-table/DataTable";
@@ -47,8 +43,6 @@ const CttmoDriversPage = () => {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sosAlerts, setSosAlerts] = useState<SOSAlert[]>([]);
-  const [loadingSos, setLoadingSos] = useState(true);
   const [driverDetails, setDriverDetails] = useState<Map<string, any>>(
     new Map()
   );
@@ -89,22 +83,6 @@ const CttmoDriversPage = () => {
     };
 
     load();
-  }, []);
-
-  useEffect(() => {
-    const loadSos = async () => {
-      try {
-        setLoadingSos(true);
-        const data = await getAllActiveSOSAlerts();
-        setSosAlerts(data || []);
-      } catch (e) {
-        console.error("Failed to load SOS alerts for CTTMO page:", e);
-      } finally {
-        setLoadingSos(false);
-      }
-    };
-
-    loadSos();
   }, []);
 
   const duplicateLicenseMap = useMemo(() => {
@@ -332,13 +310,6 @@ const CttmoDriversPage = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push("/cttmo/sos-alerts")}
-            >
-              View SOS Alerts
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={() => router.refresh()}
             >
               Refresh
@@ -372,44 +343,6 @@ const CttmoDriversPage = () => {
         )}
 
         {/* Page Header */}
-        {/* Compact SOS alerts summary */}
-        {/* {!loadingSos && sosAlerts.length > 0 && (
-          <div className="p-4 bg-red-50 border border-red-300 rounded-md flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-red-600" />
-                <span className="text-sm font-semibold text-red-700">
-                  {sosAlerts.length} active SOS alert
-                  {sosAlerts.length > 1 ? "s" : ""}
-                </span>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-red-400 text-red-700 hover:bg-red-100"
-                onClick={() => router.push("/cttmo/sos-alerts")}
-              >
-                View all
-              </Button>
-            </div>
-            <ul className="mt-1 space-y-1 text-xs text-red-800 max-h-32 overflow-y-auto">
-              {sosAlerts.slice(0, 5).map((alert) => (
-                <li key={alert.id} className="flex justify-between gap-2">
-                  <span className="truncate">
-                    {alert.userName || "Unknown user"} –{" "}
-                    {alert.address || "Coordinates only"}
-                  </span>
-                  <span className="shrink-0">
-                    {new Date(alert.timestamp).toLocaleTimeString("en-US", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )} */}
 
         <Card>
           <CardContent className="p-6 space-y-4">
