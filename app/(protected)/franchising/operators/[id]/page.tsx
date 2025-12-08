@@ -343,13 +343,13 @@ export default function OperatorDetailsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Vehicles ({vehicles.length})</CardTitle>
-            <Button
+            {/* <Button
               onClick={() => setIsAddVehicleOpen(true)}
               className="flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               Add Vehicle
-            </Button>
+            </Button> */}
           </CardHeader>
           <CardContent>
             {vehicles.length > 0 ? (

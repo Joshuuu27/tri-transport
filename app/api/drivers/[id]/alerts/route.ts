@@ -54,7 +54,7 @@ export async function GET(
     // Fetch SOS alerts
     try {
       const sosAlertsSnapshot = await db
-        .collection("sosAlerts")
+        .collection("sos_alerts")
         .where("driverId", "==", driverId)
         .get();
       sosAlerts.push(...processData(sosAlertsSnapshot.docs));

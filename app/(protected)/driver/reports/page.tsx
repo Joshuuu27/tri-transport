@@ -17,10 +17,13 @@ export default function DriverReportsPage() {
   const itemsPerPage = 5;
 
   useEffect(() => {
-    if (!user?.uid) return;
-
     const fetchReports = async () => {
       try {
+        if (!user?.uid) {
+          setLoading(false);
+          return;
+        }
+
         // Fetch reports against this driver
         const data = await getDriverReports(user.uid);
         setReports(data);

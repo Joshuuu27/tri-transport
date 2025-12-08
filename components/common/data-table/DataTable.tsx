@@ -13,6 +13,7 @@ import {
   PaginationState,
   ColumnFiltersState,
   VisibilityState,
+  Table as TanStackTable,
 } from "@tanstack/react-table";
 
 import {
@@ -37,8 +38,9 @@ import { ChevronDown, Columns2 } from "lucide-react";
 import { DataTableFilter } from "./DataTableFilter";
 
 interface DataTableProps<TData> {
-  data: TData[];
-  columns: ColumnDef<TData>[];
+  data?: TData[];
+  columns?: ColumnDef<TData>[];
+  table?: TanStackTable<TData>;
   className?: string;
   showOrderNumbers?: boolean;
   rowsPerPage?: number;
@@ -52,6 +54,7 @@ interface DataTableProps<TData> {
 export function DataTable<TData>({
   data,
   columns,
+  table: externalTable,
   className = "",
   showOrderNumbers = true,
   rowsPerPage = 10,
@@ -69,42 +72,62 @@ export function DataTable<TData>({
     pageSize: rowsPerPage,
   });
 
-  /**
-   * AUTO-INJECT ROW NUMBER COLUMN
-   */
-  const numberedColumns: ColumnDef<TData>[] = showOrderNumbers
-    ? [
-        {
-          id: "__rowNumber",
-          header: "#",
-          cell: ({ row }) =>
-            row.index + 1 + pagination.pageIndex * pagination.pageSize,
-          enableSorting: false,
-          enableHiding: false,
-          size: 50,
-        },
-        ...columns,
-      ]
-    : columns;
+  // If external table is provided, use it; otherwise create internal table
+  let table: TanStackTable<TData>;
+  let numberedColumns: ColumnDef<TData>[];
+  let filterColumns: ColumnDef<TData>[];
 
-  const table = useReactTable({
-    data,
-    columns: numberedColumns,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      pagination,
-    },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-  });
+  if (externalTable) {
+    // Use external table from useDataTable hook
+    table = externalTable;
+    // Extract column definitions from the table
+    numberedColumns = table.getAllColumns().map(col => col.columnDef) as ColumnDef<TData>[];
+    filterColumns = numberedColumns;
+  } else {
+    // Create internal table with data and columns
+    if (!data || !columns) {
+      throw new Error("Either 'table' prop or both 'data' and 'columns' props must be provided");
+    }
+
+    /**
+     * AUTO-INJECT ROW NUMBER COLUMN
+     */
+    numberedColumns = showOrderNumbers
+      ? [
+          {
+            id: "__rowNumber",
+            header: "#",
+            cell: ({ row }) =>
+              row.index + 1 + pagination.pageIndex * pagination.pageSize,
+            enableSorting: false,
+            enableHiding: false,
+            size: 50,
+          },
+          ...columns,
+        ]
+      : columns;
+
+    filterColumns = columns;
+
+    table = useReactTable({
+      data,
+      columns: numberedColumns,
+      state: {
+        sorting,
+        columnFilters,
+        columnVisibility,
+        pagination,
+      },
+      onSortingChange: setSorting,
+      onColumnFiltersChange: setColumnFilters,
+      onColumnVisibilityChange: setColumnVisibility,
+      onPaginationChange: setPagination,
+      getCoreRowModel: getCoreRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+      getFilteredRowModel: getFilteredRowModel(),
+      getPaginationRowModel: getPaginationRowModel(),
+    });
+  }
 
   return (
     <>
@@ -112,7 +135,7 @@ export function DataTable<TData>({
       {(showColumnFilter || showColumnToggle) && (
         <div className="flex items-center pb-2">
           {showColumnFilter && (
-            <DataTableFilter table={table} columns={columns} />
+            <DataTableFilter table={table} columns={filterColumns} />
           )}
 
           {showColumnToggle && (
@@ -152,8 +175,8 @@ export function DataTable<TData>({
       )}
 
       {/* Table */}
-      <div className={`rounded-md border ${className}`}>
-        <Table>
+      <div className={`rounded-md border overflow-x-auto ${className}`}>
+        <Table className="w-full">
           <TableHeader className="bg-slate-50 my-2">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -161,6 +184,10 @@ export function DataTable<TData>({
                   <TableHead
                     key={header.id}
                     className="text-neutral-500 font-medium"
+                    style={{
+                      width: header.getSize(),
+                      minWidth: header.getSize(),
+                    }}
                   >
                     {header.isPlaceholder
                       ? null
@@ -186,7 +213,13 @@ export function DataTable<TData>({
                   data-state={row.getIsSelected() && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      style={{
+                        width: cell.column.columnDef.size,
+                        minWidth: cell.column.columnDef.size,
+                      }}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()

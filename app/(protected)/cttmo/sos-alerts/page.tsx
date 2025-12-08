@@ -51,21 +51,25 @@ export default function CttmoSOSAlertsPage() {
     {
       accessorKey: "userName",
       header: "User Name",
+      size: 150,
       cell: ({ row }) => row.getValue("userName") || "Unknown",
     },
     {
       accessorKey: "userEmail",
       header: "Email",
+      size: 200,
       cell: ({ row }) => row.getValue("userEmail") || "N/A",
     },
     {
       accessorKey: "userPhone",
       header: "Phone",
+      size: 150,
       cell: ({ row }) => row.getValue("userPhone") || "N/A",
     },
     {
       accessorKey: "address",
       header: "Location",
+      size: 250,
       cell: ({ row }) => (
         <div className="max-w-xs truncate">
           {row.getValue("address") || "Coordinates available"}
@@ -75,6 +79,7 @@ export default function CttmoSOSAlertsPage() {
     {
       accessorKey: "status",
       header: "Status",
+      size: 120,
       cell: ({ row }) => {
         const status = row.getValue("status") as string;
         let statusColor = "";
@@ -92,6 +97,7 @@ export default function CttmoSOSAlertsPage() {
     {
       accessorKey: "timestamp",
       header: "Alert Time",
+      size: 180,
       cell: ({ row }) => {
         const date = row.getValue("timestamp") as Date;
         return new Date(date).toLocaleString("en-US", {
@@ -103,6 +109,7 @@ export default function CttmoSOSAlertsPage() {
     {
       id: "actions",
       header: "Actions",
+      size: 120,
       cell: ({ row }) => {
         const alert = row.original;
         return (
@@ -311,7 +318,7 @@ export default function CttmoSOSAlertsPage() {
       <CttmoHeader />
       {/* Simple header matching CTTMO look */}
       <header className="w-full border-b bg-background">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-red-600" />
@@ -352,7 +359,7 @@ export default function CttmoSOSAlertsPage() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 w-full">
+      <div className="max-w-5xl mx-auto px-6 py-8 w-full">
         {activeAlerts.length > 0 && (
           <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-600 rounded">
             <div className="flex items-center gap-2">

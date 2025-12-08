@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuthContext } from "@/app/context/AuthContext";
 import Header from "@/components/driver/driver-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "react-toastify";
-import { Lock, User, Mail, Phone } from "lucide-react";
+import { Lock, User, Mail, Phone, FileText } from "lucide-react";
 import { Loader } from "lucide-react";
+import { getDriverLicense, setDriverLicense } from "@/lib/services/DriverLicenseService";
 
 interface AccountFormData {
   displayName: string;
@@ -22,6 +23,12 @@ interface PasswordFormData {
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
+}
+
+interface LicenseFormData {
+  licenseNumber: string;
+  issueDate: string;
+  expiryDate: string;
 }
 
 const DriverSettingsPage = () => {
@@ -40,6 +47,38 @@ const DriverSettingsPage = () => {
 
   const [isLoadingAccount, setIsLoadingAccount] = useState(false);
   const [isLoadingPassword, setIsLoadingPassword] = useState(false);
+  const [isLoadingLicense, setIsLoadingLicense] = useState(false);
+  
+  const [licenseData, setLicenseData] = useState<LicenseFormData>({
+    licenseNumber: "",
+    issueDate: "",
+    expiryDate: "",
+  });
+
+  // Load existing license data on mount
+  useEffect(() => {
+    const loadLicense = async () => {
+      if (user?.uid) {
+        try {
+          const existingLicense = await getDriverLicense(user.uid);
+          if (existingLicense) {
+            setLicenseData({
+              licenseNumber: existingLicense.licenseNumber,
+              issueDate: existingLicense.issueDate 
+                ? new Date(existingLicense.issueDate).toISOString().split('T')[0] 
+                : "",
+              expiryDate: existingLicense.expiryDate 
+                ? new Date(existingLicense.expiryDate).toISOString().split('T')[0] 
+                : "",
+            });
+          }
+        } catch (error) {
+          console.error("Error loading license:", error);
+        }
+      }
+    };
+    loadLicense();
+  }, [user?.uid]);
 
   const handleAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -55,6 +94,54 @@ const DriverSettingsPage = () => {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleLicenseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setLicenseData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleUpdateLicense = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!licenseData.licenseNumber.trim()) {
+      toast.error("License number is required");
+      return;
+    }
+
+    if (!licenseData.expiryDate) {
+      toast.error("Expiry date is required");
+      return;
+    }
+
+    const expiryDate = new Date(licenseData.expiryDate);
+    if (expiryDate < new Date()) {
+      toast.error("Expiry date must be in the future");
+      return;
+    }
+
+    try {
+      setIsLoadingLicense(true);
+
+      if (user?.uid) {
+        await setDriverLicense({
+          driverId: user.uid,
+          licenseNumber: licenseData.licenseNumber,
+          issueDate: licenseData.issueDate ? new Date(licenseData.issueDate) : undefined,
+          expiryDate: new Date(licenseData.expiryDate),
+        });
+
+        toast.success("Driver's license updated successfully!");
+      }
+    } catch (error: any) {
+      console.error("Error updating license:", error);
+      toast.error("Failed to update driver's license");
+    } finally {
+      setIsLoadingLicense(false);
+    }
   };
 
   const handleUpdateAccount = async (e: React.FormEvent) => {
@@ -175,10 +262,14 @@ const DriverSettingsPage = () => {
 
             {/* Settings Tabs */}
             <Tabs defaultValue="account" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="account" className="flex items-center gap-2">
                   <User className="w-4 h-4" />
                   Account Details
+                </TabsTrigger>
+                <TabsTrigger value="license" className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Driver License
                 </TabsTrigger>
                 <TabsTrigger value="password" className="flex items-center gap-2">
                   <Lock className="w-4 h-4" />
@@ -367,6 +458,108 @@ const DriverSettingsPage = () => {
                           </>
                         ) : (
                           "Change Password"
+                        )}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Driver License Tab */}
+              <TabsContent value="license">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Driver's License</CardTitle>
+                    <CardDescription>
+                      Add or update your driver's license information
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleUpdateLicense} className="space-y-6">
+                      {/* License Number */}
+                      <div className="space-y-2">
+                        <Label htmlFor="licenseNumber" className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-gray-600" />
+                          License Number
+                        </Label>
+                        <Input
+                          id="licenseNumber"
+                          name="licenseNumber"
+                          type="text"
+                          value={licenseData.licenseNumber}
+                          onChange={handleLicenseChange}
+                          placeholder="Enter your license number"
+                          className="border-gray-200"
+                        />
+                        <p className="text-xs text-gray-500">
+                          Your official driver's license number
+                        </p>
+                      </div>
+
+                      {/* Issue Date */}
+                      <div className="space-y-2">
+                        <Label htmlFor="issueDate" className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-gray-600" />
+                          Issue Date
+                        </Label>
+                        <Input
+                          id="issueDate"
+                          name="issueDate"
+                          type="date"
+                          value={licenseData.issueDate}
+                          onChange={handleLicenseChange}
+                          className="border-gray-200"
+                        />
+                        <p className="text-xs text-gray-500">
+                          The date your license was issued
+                        </p>
+                      </div>
+
+                      {/* Expiry Date */}
+                      <div className="space-y-2">
+                        <Label htmlFor="expiryDate" className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-gray-600" />
+                          Expiry Date *
+                        </Label>
+                        <Input
+                          id="expiryDate"
+                          name="expiryDate"
+                          type="date"
+                          value={licenseData.expiryDate}
+                          onChange={handleLicenseChange}
+                          className="border-gray-200"
+                          required
+                        />
+                        <p className="text-xs text-gray-500">
+                          The date your license expires
+                        </p>
+                      </div>
+
+                      {/* Info Box */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-sm text-blue-800">
+                          <strong>License Information:</strong>
+                        </p>
+                        <ul className="text-sm text-blue-700 mt-2 space-y-1 list-disc list-inside">
+                          <li>Keep your license information up to date</li>
+                          <li>Your expiry date must be in the future</li>
+                          <li>Update your license before it expires</li>
+                        </ul>
+                      </div>
+
+                      {/* Submit Button */}
+                      <Button
+                        type="submit"
+                        disabled={isLoadingLicense}
+                        className="w-full bg-blue-600 hover:bg-blue-700"
+                      >
+                        {isLoadingLicense ? (
+                          <>
+                            <Loader className="w-4 h-4 mr-2 animate-spin" />
+                            Updating...
+                          </>
+                        ) : (
+                          "Update License Information"
                         )}
                       </Button>
                     </form>

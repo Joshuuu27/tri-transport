@@ -35,6 +35,8 @@ export default function ScanResultPage() {
   const [licenseNumber, setLicenseNumber] = useState("");
   const [vehicleType, setVehicleType] = useState("");
   const [plateNumber, setPlateNumber] = useState("");
+  const [vehicleColor, setVehicleColor] = useState("");
+  const [operatorName, setOperatorName] = useState("");
   const [allCommendations, setAllCommendations] = useState<Commendation[]>([]);
   const [allReports, setAllReports] = useState<ReportCase[]>([]);
   const [displayedCommendations, setDisplayedCommendations] = useState<Commendation[]>([]);
@@ -58,24 +60,33 @@ export default function ScanResultPage() {
 
     const fetchDriver = async () => {
       try {
-        // Fetch basic driver info
-        const res = await fetch(`/api/drivers?id=${driverId}`);
-        const data = await res.json();
-        setDriver(data);
+        // Fetch full driver profile including license, vehicle, and operator info
+        const profileRes = await fetch(`/api/drivers/${driverId}/full-profile`);
+        const profileData = await profileRes.json();
+        
+        console.log("Full profile data:", profileData);
+        
+        setDriver({
+          id: profileData.id,
+          name: profileData.displayName || profileData.name || "",
+        });
 
-        // Fetch license number from driverLicenses collection
-        const licenseData = await getDriverLicense(driverId);
-        if (licenseData?.licenseNumber) {
-          setLicenseNumber(licenseData.licenseNumber);
+        // Extract license number
+        if (profileData.license?.licenseNumber) {
+          setLicenseNumber(profileData.license.licenseNumber);
         }
 
-        // Fetch vehicles from vehicles collection
-        const vehiclesData = await getDriverVehicles(driverId);
-        if (vehiclesData.length > 0) {
-          // Get the first vehicle's details
-          const firstVehicle = vehiclesData[0];
-          setVehicleType(firstVehicle.vehicleType);
-          setPlateNumber(firstVehicle.plateNumber);
+        // Extract vehicle info
+        if (profileData.vehicle) {
+          setVehicleType(profileData.vehicle.vehicleType);
+          setPlateNumber(profileData.vehicle.plateNumber);
+          setVehicleColor(profileData.vehicle.color || "");
+        }
+
+        // Extract operator name
+        if (profileData.operator?.name) {
+          console.log("Setting operator name to:", profileData.operator.name);
+          setOperatorName(profileData.operator.name);
         }
 
         // Fetch ALL commendations for this driver to calculate average
@@ -246,6 +257,8 @@ export default function ScanResultPage() {
             <p><strong>License #:</strong> {licenseNumber || "Not provided"}</p>
             <p><strong>Vehicle Type:</strong> {vehicleType || "Not provided"}</p>
             <p><strong>Plate #:</strong> {plateNumber || "Not provided"}</p>
+            <p><strong>Color #:</strong> {vehicleColor || "Not provided"}</p>
+            <p><strong>Operator Name:</strong> {operatorName || "Not provided"}</p>
           </div>
 
           {/* Average Rating */}
