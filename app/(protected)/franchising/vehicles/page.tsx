@@ -14,6 +14,8 @@ import {
   ViewCommendationsModal,
 } from "./view-driver-details-modals";
 import { EditVehicleModal } from "./edit-vehicle-modal";
+import { DeleteVehicleModal } from "./delete-vehicle-modal";
+import { FranchiseRenewalHistoryModal } from "./franchise-renewal-history-modal";
 import { getDriverLicense } from "@/lib/services/DriverLicenseService";
 
 const VehiclesPage = () => {
@@ -22,6 +24,8 @@ const VehiclesPage = () => {
   const [isReportsOpen, setIsReportsOpen] = useState(false);
   const [isCommendationsOpen, setIsCommendationsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isRenewalHistoryOpen, setIsRenewalHistoryOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<OperatorVehicle | null>(
     null
   );
@@ -35,32 +39,43 @@ const VehiclesPage = () => {
 
       let vehiclesData = await res.json();
 
-      // Fetch license numbers for each driver
-      const vehiclesWithLicenses = await Promise.all(
+      // Fetch license numbers and operator names for each vehicle
+      const vehiclesWithDetails = await Promise.all(
         vehiclesData.map(async (vehicle: OperatorVehicle) => {
+          let driverLicenseNumber = "N/A";
+          let operatorName = "N/A";
+
           if (vehicle.assignedDriverId) {
             try {
               const license = await getDriverLicense(vehicle.assignedDriverId);
-              return {
-                ...vehicle,
-                driverLicenseNumber: license?.licenseNumber || "N/A",
-              };
+              driverLicenseNumber = license?.licenseNumber || "N/A";
             } catch (error) {
               console.error("Error fetching license:", error);
-              return {
-                ...vehicle,
-                driverLicenseNumber: "N/A",
-              };
             }
           }
+
+          // Fetch operator name if operatorId exists
+          if (vehicle.operatorId) {
+            try {
+              const operatorRes = await fetch(`/api/operators/${vehicle.operatorId}`);
+              if (operatorRes.ok) {
+                const operatorData = await operatorRes.json();
+                operatorName = operatorData?.displayName || operatorData?.name || "N/A";
+              }
+            } catch (error) {
+              console.error("Error fetching operator:", error);
+            }
+          }
+
           return {
             ...vehicle,
-            driverLicenseNumber: "N/A",
+            driverLicenseNumber,
+            operatorName,
           };
         })
       );
 
-      setVehicles(vehiclesWithLicenses);
+      setVehicles(vehiclesWithDetails);
     } catch (error) {
       console.error("Error fetching vehicles:", error);
       toast.error("Failed to load vehicles");
@@ -92,10 +107,22 @@ const VehiclesPage = () => {
     setIsEditOpen(true);
   };
 
+  const handleDelete = (vehicle: OperatorVehicle) => {
+    setSelectedVehicle(vehicle);
+    setIsDeleteOpen(true);
+  };
+
+  const handleViewRenewalHistory = (vehicle: OperatorVehicle) => {
+    setSelectedVehicle(vehicle);
+    setIsRenewalHistoryOpen(true);
+  };
+
   const columns = createVehicleColumns({
     onViewReports: handleViewReports,
     onViewCommendations: handleViewCommendations,
     onEdit: handleEdit,
+    onDelete: handleDelete,
+    onViewRenewalHistory: handleViewRenewalHistory,
   });
 
   return (
@@ -171,6 +198,27 @@ const VehiclesPage = () => {
         open={isEditOpen}
         onOpenChange={setIsEditOpen}
         onUpdated={fetchAllVehicles}
+      />
+
+      {/* Delete Vehicle Modal */}
+      <DeleteVehicleModal
+        isOpen={isDeleteOpen}
+        onClose={() => {
+          setIsDeleteOpen(false);
+          setSelectedVehicle(null);
+        }}
+        vehicle={selectedVehicle}
+        onDeleted={fetchAllVehicles}
+      />
+
+      {/* Franchise Renewal History Modal */}
+      <FranchiseRenewalHistoryModal
+        isOpen={isRenewalHistoryOpen}
+        onClose={() => {
+          setIsRenewalHistoryOpen(false);
+          setSelectedVehicle(null);
+        }}
+        vehicle={selectedVehicle}
       />
     </>
   );

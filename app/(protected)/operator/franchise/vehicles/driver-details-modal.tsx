@@ -19,6 +19,8 @@ interface DriverDetailsModalProps {
   onClose: () => void;
   driverId?: string;
   driverName?: string;
+  vehicleColor?: string;
+  operatorName?: string;
 }
 
 interface Commendation {
@@ -59,6 +61,8 @@ export default function DriverDetailsModal({
   onClose,
   driverId,
   driverName,
+  vehicleColor,
+  operatorName,
 }: DriverDetailsModalProps) {
   const [commendations, setCommendations] = useState<Commendation[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
@@ -148,6 +152,26 @@ export default function DriverDetailsModal({
             {driverName || "Driver"} - Records & Alerts
           </DialogDescription>
         </DialogHeader>
+
+        {/* Vehicle Information Section */}
+        {(vehicleColor || operatorName) && (
+          <div className="px-6 py-3 bg-slate-50 border-b">
+            <div className="grid grid-cols-2 gap-4">
+              {vehicleColor && (
+                <div>
+                  <p className="text-xs text-gray-600 font-semibold">Vehicle Color</p>
+                  <p className="text-sm text-gray-800 capitalize">{vehicleColor}</p>
+                </div>
+              )}
+              {operatorName && (
+                <div>
+                  <p className="text-xs text-gray-600 font-semibold">Operator Name</p>
+                  <p className="text-sm text-gray-800">{operatorName}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center py-12 flex-1">

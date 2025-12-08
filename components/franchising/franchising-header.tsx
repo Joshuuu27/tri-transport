@@ -12,10 +12,11 @@ export default function Header() {
 
   const navigationLinks = [
     { label: "Home", href: "/franchising" },
+    { label: "Vehicles", href: "/franchising/vehicles" },
     { label: "Operators", href: "/franchising/operators" },
     { label: "Drivers", href: "/franchising/drivers" },
-    { label: "Scanner", href: "/franchising/scanner" },
-    { label: "Profile", href: "/franchising/profile" },
+    /* { label: "Scanner", href: "/franchising/scanner" }, */
+    /* { label: "Profile", href: "/franchising/profile" }, */
     { label: "Settings", href: "/franchising/settings" },
   ];
 

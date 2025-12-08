@@ -13,11 +13,11 @@ export default function Header() {
 
   const navigationLinks = [
     { label: "Home", href: "/driver" },
-    { label: "History", href: "/driver/trip-history" },
-    { label: "Bookings", href: "/driver/commuter" },
+    /* { label: "History", href: "/driver/trip-history" }, */
+    /* { label: "Bookings", href: "/driver/commuter" }, */
     { label: "Commendations", href: "/driver/commendations" },
     { label: "Reports", href: "/driver/reports" },
-    { label: "SOS Alerts", href: "/driver/sos-alerts" },
+    /* { label: "SOS Alerts", href: "/driver/sos-alerts" }, */
     { label: "Settings", href: "/driver/settings" },
   ];
 

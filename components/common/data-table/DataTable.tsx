@@ -152,8 +152,8 @@ export function DataTable<TData>({
       )}
 
       {/* Table */}
-      <div className={`rounded-md border ${className}`}>
-        <Table>
+      <div className={`rounded-md border overflow-x-auto ${className}`}>
+        <Table className="w-full">
           <TableHeader className="bg-slate-50 my-2">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -161,6 +161,10 @@ export function DataTable<TData>({
                   <TableHead
                     key={header.id}
                     className="text-neutral-500 font-medium"
+                    style={{
+                      width: header.getSize(),
+                      minWidth: header.getSize(),
+                    }}
                   >
                     {header.isPlaceholder
                       ? null
@@ -186,7 +190,13 @@ export function DataTable<TData>({
                   data-state={row.getIsSelected() && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      style={{
+                        width: cell.column.columnDef.size,
+                        minWidth: cell.column.columnDef.size,
+                      }}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()

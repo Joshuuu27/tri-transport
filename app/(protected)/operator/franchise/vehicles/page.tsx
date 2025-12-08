@@ -187,6 +187,8 @@ const OperatorVehiclesPage = () => {
         }}
         driverId={selectedVehicle?.assignedDriverId}
         driverName={selectedVehicle?.assignedDriverName}
+        vehicleColor={selectedVehicle?.color}
+        operatorName={user?.displayName || "Operator"}
       />
     </>
   );

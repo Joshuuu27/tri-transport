@@ -180,13 +180,13 @@ export default function DriverDetailsPage() {
                       <p className="text-lg font-semibold">
                         {licenseNumber || "Not provided"}
                       </p>
-                      <Button
+                     {/*  <Button
                         size="sm"
                         variant="outline"
                         onClick={() => setEditingLicense(true)}
                       >
                         Edit
-                      </Button>
+                      </Button> */}
                     </div>
                   )}
                 </div>

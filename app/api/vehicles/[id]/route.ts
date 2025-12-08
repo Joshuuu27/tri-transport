@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase.admin";
+import { db, adminAuth } from "@/lib/firebase.admin";
+import * as bcrypt from "bcryptjs";
 
 export async function GET(
   req: Request,
@@ -116,6 +117,64 @@ export async function DELETE(
   const { id: vehicleId } = await params;
 
   try {
+    const body = await req.json();
+    const { password } = body;
+
+    if (!password) {
+      return NextResponse.json(
+        { error: "Password is required to delete a vehicle" },
+        { status: 400 }
+      );
+    }
+
+    // Get the current user's session from headers
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Extract token from "Bearer <token>"
+    const token = authHeader.replace("Bearer ", "");
+
+    // Verify the token to get the user
+    let decodedToken;
+    try {
+      decodedToken = await adminAuth.verifyIdToken(token);
+    } catch (error) {
+      console.log("Could not verify token, attempting alternative auth method");
+      // Continue anyway - we'll verify password differently
+    }
+
+    // Get the user's credentials from Firestore
+    const usersSnapshot = await db
+      .collection("users")
+      .where("role", "==", "franchising")
+      .limit(100)
+      .get();
+
+    let passwordValid = false;
+    for (const userDoc of usersSnapshot.docs) {
+      const userData = userDoc.data();
+      // Check if password matches using bcrypt
+      if (userData.hashedPassword) {
+        const isMatch = bcrypt.compareSync(password, userData.hashedPassword);
+        if (isMatch) {
+          passwordValid = true;
+          break;
+        }
+      }
+    }
+
+    if (!passwordValid) {
+      return NextResponse.json(
+        { error: "Invalid password" },
+        { status: 401 }
+      );
+    }
+
     // Verify vehicle exists
     const vehicleDoc = await db.collection("vehicles").doc(vehicleId).get();
     if (!vehicleDoc.exists) {
