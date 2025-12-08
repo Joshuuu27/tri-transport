@@ -1,11 +1,14 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Heart, Shield } from "lucide-react";
+import { MapPin, Heart, Shield, AlertTriangle } from "lucide-react";
 
 interface DashboardIntroProps {
   displayName?: string;
   email?: string;
   role?: string;
   subtitle: string;
+  sosAlertsToday?: number;
+  totalSosAlerts?: number;
+  onSOSAlertClick?: () => void;
   features?: Array<{ icon: any; title: string; description: string }>;
 }
 
@@ -14,6 +17,9 @@ export function DashboardIntro({
   email,
   role,
   subtitle,
+  sosAlertsToday,
+  totalSosAlerts,
+  onSOSAlertClick,
   features,
 }: DashboardIntroProps) {
   const defaultFeatures = [
@@ -105,21 +111,45 @@ export function DashboardIntro({
 
       {/* User Info Card */}
       {email && (
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-6 space-y-4">
-            <h2 className="text-xl font-bold text-gray-800">Your Account</h2>
-            <div className="grid md:grid-cols-2 gap-4 text-sm">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-gray-600 text-xs uppercase font-semibold">Email</p>
-                <p className="text-gray-800 font-medium mt-1">{email}</p>
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card className="border-0 shadow-lg">
+            <CardContent className="p-6 space-y-4">
+              <h2 className="text-xl font-bold text-gray-800">Your Account</h2>
+              <div className="grid gap-4 text-sm">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-600 text-xs uppercase font-semibold">Email</p>
+                  <p className="text-gray-800 font-medium mt-1">{email}</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-600 text-xs uppercase font-semibold">Account Type</p>
+                  <p className="text-gray-800 font-medium mt-1 capitalize">{role || "User"}</p>
+                </div>
               </div>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-gray-600 text-xs uppercase font-semibold">Account Type</p>
-                <p className="text-gray-800 font-medium mt-1 capitalize">{role || "User"}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {sosAlertsToday !== undefined && totalSosAlerts !== undefined && (
+            <button
+              onClick={onSOSAlertClick}
+              className="w-full cursor-pointer hover:shadow-lg transition-shadow"
+            >
+              <Card className="border-0 shadow-lg bg-red-50">
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-gray-800">SOS Alerts Today</h2>
+                    <AlertTriangle className="w-6 h-6 text-red-600" />
+                  </div>
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <p className="text-gray-600 text-xs uppercase font-semibold">Total Count</p>
+                      <p className="text-red-600 text-4xl font-bold mt-2">{sosAlertsToday}/{totalSosAlerts}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

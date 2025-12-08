@@ -7,10 +7,10 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const reportId = params.id;
+    const { id: reportId } = await params;
 
     if (!reportId) {
       return NextResponse.json(
@@ -50,6 +50,62 @@ export async function GET(
     console.error("Error fetching report:", error);
     return NextResponse.json(
       { error: "Failed to fetch report" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: reportId } = await params;
+    const { status } = await request.json();
+
+    if (!reportId) {
+      return NextResponse.json(
+        { error: "Report ID is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!status || !["pending", "investigating", "resolved"].includes(status)) {
+      return NextResponse.json(
+        { error: "Invalid status. Must be 'pending', 'investigating', or 'resolved'" },
+        { status: 400 }
+      );
+    }
+
+    const reportRef = db.collection("reports").doc(reportId);
+    const reportDoc = await reportRef.get();
+
+    if (!reportDoc.exists) {
+      return NextResponse.json(
+        { error: "Report not found" },
+        { status: 404 }
+      );
+    }
+
+    // Update the status
+    await reportRef.update({
+      status,
+      updatedAt: new Date(),
+    });
+
+    // Clear cache for this report
+    reportCache.delete(reportId);
+
+    return NextResponse.json({
+      success: true,
+      message: "Report status updated successfully",
+      id: reportId,
+      status,
+    });
+  } catch (error) {
+    console.error("Error updating report:", error);
+    return NextResponse.json(
+      { error: "Failed to update report" },
       { status: 500 }
     );
   }

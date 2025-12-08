@@ -11,90 +11,88 @@ export const PieChart = ({
   height = 300,
   title,
 }: PieChartProps) => {
+  const filteredData = data.filter(item => item.value > 0);
+  
+  if (filteredData.length === 0) {
+    return (
+      <div className="w-full flex flex-col items-center">
+        <p className="text-gray-500">No data available</p>
+      </div>
+    );
+  }
+
+  const total = filteredData.reduce((sum, item) => sum + item.value, 0);
   const centerX = width / 2;
   const centerY = height / 2;
-  const radius = Math.min(width, height) / 2 - 20;
+  const radius = Math.min(width, height) / 2 - 50;
 
-  // Calculate total
-  const total = data.reduce((sum, item) => sum + item.value, 0);
+  const slices: any[] = [];
+  let currentPercentage = 0;
 
-  // Generate pie slices
-  let currentAngle = -Math.PI / 2;
-  const slices = data.map((item) => {
-    const sliceAngle = (item.value / total) * 2 * Math.PI;
-    const startAngle = currentAngle;
-    const endAngle = currentAngle + sliceAngle;
+  filteredData.forEach((item) => {
+    const percentage = (item.value / total) * 100;
+    const slicePercentage = percentage;
+    
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (circumference * percentage) / 100;
 
-    // Calculate path
-    const startX = centerX + radius * Math.cos(startAngle);
-    const startY = centerY + radius * Math.sin(startAngle);
-    const endX = centerX + radius * Math.cos(endAngle);
-    const endY = centerY + radius * Math.sin(endAngle);
-
-    const largeArc = sliceAngle > Math.PI ? 1 : 0;
-
-    const path = `
-      M ${centerX} ${centerY}
-      L ${startX} ${startY}
-      A ${radius} ${radius} 0 ${largeArc} 1 ${endX} ${endY}
-      Z
-    `;
-
-    // Calculate label position
-    const labelAngle = startAngle + sliceAngle / 2;
-    const labelRadius = radius * 0.7;
-    const labelX = centerX + labelRadius * Math.cos(labelAngle);
-    const labelY = centerY + labelRadius * Math.sin(labelAngle);
-
-    const percentage = ((item.value / total) * 100).toFixed(0);
-
-    currentAngle = endAngle;
-
-    return {
-      path,
-      labelX,
-      labelY,
-      percentage,
+    slices.push({
+      color: item.color,
+      percentage: percentage.toFixed(1),
       name: item.name,
       value: item.value,
-      color: item.color,
-    };
+      offset: (circumference * currentPercentage) / 100,
+      dashoffset: strokeDashoffset,
+    });
+
+    currentPercentage += percentage;
   });
 
   return (
-    <div className="w-full flex flex-col items-center">
-      {title && <h3 className="text-lg font-semibold mb-4 text-gray-700">{title}</h3>}
-      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+    <div className="w-full flex flex-col items-center gap-4">
+      {title && <h3 className="text-lg font-semibold text-gray-700">{title}</h3>}
+      <svg
+        width={width}
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        style={{ backgroundColor: "#fafafa" }}
+      >
+        <circle cx={centerX} cy={centerY} r={radius} fill="none" stroke="#e5e7eb" strokeWidth="2" />
         {slices.map((slice, index) => (
-          <g key={index}>
-            <path
-              d={slice.path}
-              fill={slice.color}
-              stroke="white"
-              strokeWidth="2"
-            />
-            <text
-              x={slice.labelX}
-              y={slice.labelY}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              className="text-sm font-bold fill-white"
-              pointerEvents="none"
-            >
-              {slice.percentage}%
-            </text>
-          </g>
+          <circle
+            key={index}
+            cx={centerX}
+            cy={centerY}
+            r={radius}
+            fill="none"
+            stroke={slice.color}
+            strokeWidth="30"
+            strokeDasharray={`${(parseFloat(slice.percentage) * 2 * Math.PI * radius) / 100} ${2 * Math.PI * radius}`}
+            strokeDashoffset={-slice.offset}
+            strokeLinecap="round"
+          />
         ))}
+        <text
+          x={centerX}
+          y={centerY}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize="24"
+          fontWeight="bold"
+          fill="#1f2937"
+        >
+          {total}
+        </text>
       </svg>
-      <div className="mt-6 flex flex-wrap gap-4 justify-center">
-        {data.map((item, index) => (
+      <div className="flex flex-wrap gap-4 justify-center">
+        {filteredData.map((item, index) => (
           <div key={index} className="flex items-center gap-2">
             <div
-              className="w-3 h-3 rounded"
+              className="w-3 h-3 rounded-full"
               style={{ backgroundColor: item.color }}
             ></div>
-            <span className="text-sm text-gray-600">
-              {item.name}: {item.value}
+            <span className="text-sm text-gray-700">
+              <span className="font-semibold">{item.name}</span>: {item.value}
             </span>
           </div>
         ))}

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase.admin";
+import { db, firebaseAdmin } from "@/lib/firebase.admin";
 
 export async function PATCH(
   req: Request,
@@ -32,19 +32,19 @@ export async function PATCH(
     const vehicleData = vehicleDoc.data();
     const renewalHistory = vehicleData?.renewalHistory || [];
 
-    // Add new renewal entry to history
+    // Add new renewal entry to history with proper Firestore Timestamps
     renewalHistory.push({
-      renewalDate: renewalDate,
-      expirationDate: newExpirationDate,
+      renewalDate: firebaseAdmin.firestore.Timestamp.fromDate(renewalDate),
+      expirationDate: firebaseAdmin.firestore.Timestamp.fromDate(newExpirationDate),
       type: "renewal",
       remarks: "Franchise renewed",
     });
 
     // Update vehicle with new expiration date and renewal history
     await db.collection("vehicles").doc(vehicleId).update({
-      franchiseExpirationDate: newExpirationDate,
+      franchiseExpirationDate: firebaseAdmin.firestore.Timestamp.fromDate(newExpirationDate),
       renewalHistory: renewalHistory,
-      updatedAt: renewalDate,
+      updatedAt: firebaseAdmin.firestore.Timestamp.fromDate(renewalDate),
     });
 
     return NextResponse.json({

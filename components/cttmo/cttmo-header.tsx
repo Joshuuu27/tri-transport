@@ -14,6 +14,7 @@ export default function CttmoHeader() {
   const navigationLinks = [
     { label: "Home", href: "/cttmo" },
     { label: "Drivers", href: "/cttmo/drivers" },
+    { label: "Reports", href: "/cttmo/reports" },
     { label: "Settings", href: "/cttmo/settings" },
   ];
 
