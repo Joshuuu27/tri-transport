@@ -4,14 +4,17 @@
 import { AuthContextProvider } from "@/app/context/AuthContext";
 import { SOSAlertContextProvider } from "@/app/context/SOSAlertContext";
 import { ToastContainer, Slide } from "react-toastify";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 export const ClientLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <AuthContextProvider>
-      <SOSAlertContextProvider>
-        {children}
-        <ToastContainer transition={Slide} />
-      </SOSAlertContextProvider>
-    </AuthContextProvider>
+    <NuqsAdapter>
+      <AuthContextProvider>
+        <SOSAlertContextProvider>
+          {children}
+          <ToastContainer transition={Slide} />
+        </SOSAlertContextProvider>
+      </AuthContextProvider>
+    </NuqsAdapter>
   );
 };

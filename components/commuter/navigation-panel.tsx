@@ -1,6 +1,6 @@
 "use client";
 
-import { Circle, MoreVertical } from "lucide-react";
+import { Circle, MoreVertical, Loader2 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { useState, useEffect, useRef } from "react";
@@ -22,11 +22,14 @@ interface NavigationPanelProps {
   startingPoint: string;
   setStartingPoint: (value: string) => void;
   fare?: number | null;
+  isCalculatingFare?: boolean;
   onRequestCurrentLocation?: () => void;
   isTracking?: boolean;
   onToggleTracking?: () => void;
   mapClickMode?: "from" | "to";
   onMapClickModeChange?: (mode: "from" | "to") => void;
+  onStartingPointCoordsChange?: (coords: { lat: number; lng: number } | null) => void;
+  onDestinationCoordsChange?: (coords: { lat: number; lng: number } | null) => void;
 }
 
 export default function NavigationPanel({
@@ -35,15 +38,20 @@ export default function NavigationPanel({
   startingPoint,
   setStartingPoint,
   fare,
+  isCalculatingFare,
   onRequestCurrentLocation,
   isTracking,
   onToggleTracking, 
   mapClickMode,
   onMapClickModeChange,
+  onStartingPointCoordsChange,
+  onDestinationCoordsChange,
 }: NavigationPanelProps) {
   const [locating, setLocating] = useState(false);
   const startInputRef = useRef<HTMLInputElement>(null);
   const destInputRef = useRef<HTMLInputElement>(null);
+  const startGeocodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const destGeocodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load Google Places Autocomplete for both fields
   useEffect(() => {
@@ -61,8 +69,22 @@ export default function NavigationPanel({
           // Don't allow autocomplete to change starting point if tracking is active
           if (isTracking) return;
           const place = autocompleteStart.getPlace();
-          if (place && place.formatted_address) setStartingPoint(place.formatted_address);
-          else if (place && place.name) setStartingPoint(place.name);
+          if (place) {
+            // Update address
+            if (place.formatted_address) {
+              setStartingPoint(place.formatted_address);
+            } else if (place.name) {
+              setStartingPoint(place.name);
+            }
+            // Update coordinates if available
+            if (place.geometry && place.geometry.location && onStartingPointCoordsChange) {
+              const coords = {
+                lat: place.geometry.location.lat(),
+                lng: place.geometry.location.lng()
+              };
+              onStartingPointCoordsChange(coords);
+            }
+          }
         });
       }
       // Destination Autocomplete
@@ -73,8 +95,22 @@ export default function NavigationPanel({
         });
         autocompleteDest.addListener("place_changed", () => {
           const place = autocompleteDest.getPlace();
-          if (place && place.formatted_address) setDestination(place.formatted_address);
-          else if (place && place.name) setDestination(place.name);
+          if (place) {
+            // Update address
+            if (place.formatted_address) {
+              setDestination(place.formatted_address);
+            } else if (place.name) {
+              setDestination(place.name);
+            }
+            // Update coordinates if available
+            if (place.geometry && place.geometry.location && onDestinationCoordsChange) {
+              const coords = {
+                lat: place.geometry.location.lat(),
+                lng: place.geometry.location.lng()
+              };
+              onDestinationCoordsChange(coords);
+            }
+          }
         });
       }
     };
@@ -123,10 +159,46 @@ export default function NavigationPanel({
             ref={startInputRef}
             placeholder="From (click map or use My Location)"
             value={startingPoint}
-            onChange={(e) => {
+            onChange={async (e) => {
               // Don't allow changes if tracking is active
               if (!isTracking) {
-                setStartingPoint(e.target.value); 
+                const value = e.target.value;
+                setStartingPoint(value);
+                
+                // Clear previous timeout
+                if (startGeocodeTimeoutRef.current) {
+                  clearTimeout(startGeocodeTimeoutRef.current);
+                }
+                
+                // Debounce geocoding to avoid too many API calls
+                startGeocodeTimeoutRef.current = setTimeout(() => {
+                  // Geocode the address to get coordinates and update marker
+                  if (value && value.trim() && (window as any).google && (window as any).google.maps && onStartingPointCoordsChange) {
+                    const geocoder = new (window as any).google.maps.Geocoder();
+                    geocoder.geocode({ address: value }, (results: any, status: string) => {
+                      if (status === (window as any).google.maps.GeocoderStatus.OK && results && results[0]) {
+                        const loc = results[0].geometry.location;
+                        onStartingPointCoordsChange({
+                          lat: loc.lat(),
+                          lng: loc.lng()
+                        });
+                      } else {
+                        // If geocoding fails, try to parse as coordinates
+                        const coordMatch = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+                        if (coordMatch) {
+                          onStartingPointCoordsChange({
+                            lat: parseFloat(coordMatch[1]),
+                            lng: parseFloat(coordMatch[2])
+                          });
+                        } else {
+                          onStartingPointCoordsChange(null);
+                        }
+                      }
+                    });
+                  } else if (!value || !value.trim()) {
+                    onStartingPointCoordsChange?.(null);
+                  }
+                }, 500); // Wait 500ms after user stops typing
               }
             }}
             onFocus={() => { if (onMapClickModeChange) onMapClickModeChange('from'); }}
@@ -165,7 +237,45 @@ export default function NavigationPanel({
             ref={destInputRef}
             placeholder="To (search or click map)"
             value={destination}
-            onChange={(e) => setDestination(e.target.value)}
+            onChange={async (e) => {
+              const value = e.target.value;
+              setDestination(value);
+              
+              // Clear previous timeout
+              if (destGeocodeTimeoutRef.current) {
+                clearTimeout(destGeocodeTimeoutRef.current);
+              }
+              
+              // Debounce geocoding to avoid too many API calls
+              destGeocodeTimeoutRef.current = setTimeout(() => {
+                // Geocode the address to get coordinates and update marker
+                if (value && value.trim() && (window as any).google && (window as any).google.maps && onDestinationCoordsChange) {
+                  const geocoder = new (window as any).google.maps.Geocoder();
+                  geocoder.geocode({ address: value }, (results: any, status: string) => {
+                    if (status === (window as any).google.maps.GeocoderStatus.OK && results && results[0]) {
+                      const loc = results[0].geometry.location;
+                      onDestinationCoordsChange({
+                        lat: loc.lat(),
+                        lng: loc.lng()
+                      });
+                    } else {
+                      // If geocoding fails, try to parse as coordinates
+                      const coordMatch = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+                      if (coordMatch) {
+                        onDestinationCoordsChange({
+                          lat: parseFloat(coordMatch[1]),
+                          lng: parseFloat(coordMatch[2])
+                        });
+                      } else {
+                        onDestinationCoordsChange(null);
+                      }
+                    }
+                  });
+                } else if (!value || !value.trim()) {
+                  onDestinationCoordsChange?.(null);
+                }
+              }, 500); // Wait 500ms after user stops typing
+            }}
             onFocus={() => { if (onMapClickModeChange) onMapClickModeChange('to'); }}
             onClick={() => { if (onMapClickModeChange) onMapClickModeChange('to'); }}
             className="flex-1 text-sm md:text-base pl-3 md:pl-4 pr-3 md:pr-4 py-2.5 md:py-3 border-2 border-border rounded-lg min-h-[44px]"
@@ -190,7 +300,12 @@ export default function NavigationPanel({
       <div className="p-3 md:p-4 flex-1 flex flex-col">
         <div className="mb-3 md:mb-4">
           <h3 className="text-base md:text-lg font-semibold text-foreground mb-2">Fare</h3>
-          {fare !== null ? (
+          {isCalculatingFare ? (
+            <div className="flex items-center gap-2 text-primary">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <p className="text-sm md:text-base font-medium">Calculating fare...</p>
+            </div>
+          ) : fare !== null ? (
             <p className="text-xl md:text-2xl font-bold text-primary mb-2">₱{fare}</p>
           ) : (
             <p className="text-xs md:text-sm text-muted-foreground mb-4">Enter route to see fare.</p>
