@@ -82,9 +82,9 @@ const UserDashboard = () => {
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                   <MapPin className="w-6 h-6 text-blue-600" />
                 </div>
-                <h3 className="text-lg font-semibold">Easy Booking</h3>
+                <h3 className="text-lg font-semibold">Real-time Tracking</h3>
                 <p className="text-sm text-gray-600">
-                  Book your ride in seconds with our intuitive and user-friendly interface.
+                  Track your ride in real-time with live GPS updates and driver location.
                 </p>
               </CardContent>
             </Card>
