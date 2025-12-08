@@ -72,8 +72,8 @@ export default function ScanResultPage() {
         });
 
         // Extract license number
-        if (profileData.licenseNumber) {
-          setLicenseNumber(profileData.licenseNumber);
+        if (profileData.license?.licenseNumber) {
+          setLicenseNumber(profileData.license.licenseNumber);
         }
 
         // Extract vehicle info
@@ -84,9 +84,9 @@ export default function ScanResultPage() {
         }
 
         // Extract operator name
-        if (profileData.operatorName) {
-          console.log("Setting operator name to:", profileData.operatorName);
-          setOperatorName(profileData.operatorName);
+        if (profileData.operator?.name) {
+          console.log("Setting operator name to:", profileData.operator.name);
+          setOperatorName(profileData.operator.name);
         }
 
         // Fetch ALL commendations for this driver to calculate average
