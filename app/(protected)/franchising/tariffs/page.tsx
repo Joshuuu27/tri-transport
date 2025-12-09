@@ -40,7 +40,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import tariffData from "@/tariff.json";
-import Header from "@/components/admin/admin-header";
+import Header from "@/components/franchising/franchising-header";
 import { toast } from "react-toastify";
 import { getGasPriceRange } from "@/lib/tariff-utils";
 import { Fuel } from "lucide-react";
@@ -152,6 +152,15 @@ export default function TariffsPage() {
   const [currentGasPrice, setCurrentGasPrice] = React.useState<number | null>(null);
   const [gasPriceDialogOpen, setGasPriceDialogOpen] = React.useState(false);
   const [gasPriceInput, setGasPriceInput] = React.useState<string>("");
+  const [addDialogOpen, setAddDialogOpen] = React.useState(false);
+  const [addFormData, setAddFormData] = React.useState({
+    from: "",
+    to: "",
+    rate_40_50: 0,
+    rate_50_70: 0,
+    rate_70_90: 0,
+    rate_90_100: 0,
+  });
 
   React.useEffect(() => {
     // Load current gas price from Firestore
@@ -330,6 +339,76 @@ export default function TariffsPage() {
       }
     }
   }, []);
+
+  const handleAddRoute = React.useCallback(async () => {
+    // Validate form data
+    if (!addFormData.from.trim() || !addFormData.to.trim()) {
+      toast.error("Please enter both origin and destination");
+      return;
+    }
+
+    if (
+      addFormData.rate_40_50 < 0 ||
+      addFormData.rate_50_70 < 0 ||
+      addFormData.rate_70_90 < 0 ||
+      addFormData.rate_90_100 < 0
+    ) {
+      toast.error("Fare rates cannot be negative");
+      return;
+    }
+
+    // Check if route already exists
+    const routeExists = data.some(
+      (item) => 
+        item.from.toLowerCase() === addFormData.from.trim().toLowerCase() &&
+        item.to.toLowerCase() === addFormData.to.trim().toLowerCase()
+    );
+
+    if (routeExists) {
+      toast.error("A route with this origin and destination already exists");
+      return;
+    }
+
+    try {
+      // Create new route
+      const newRoute: TariffRoute = {
+        id: `${addFormData.from}-${Date.now()}`,
+        from: addFormData.from.trim(),
+        to: addFormData.to.trim(),
+        rate_40_50: Number(addFormData.rate_40_50),
+        rate_50_70: Number(addFormData.rate_50_70),
+        rate_70_90: Number(addFormData.rate_70_90),
+        rate_90_100: Number(addFormData.rate_90_100),
+      };
+
+      // Update the data
+      let updatedData: TariffRoute[] = [];
+      setData((prevData) => {
+        updatedData = [...prevData, newRoute];
+        return updatedData;
+      });
+
+      // Convert to fare_matrix structure and save to Firestore
+      const fareMatrix = convertToFareMatrix(updatedData);
+      await saveTariffToFirestore(fareMatrix);
+
+      toast.success("New route added successfully");
+      setAddDialogOpen(false);
+      
+      // Reset form
+      setAddFormData({
+        from: "",
+        to: "",
+        rate_40_50: 0,
+        rate_50_70: 0,
+        rate_70_90: 0,
+        rate_90_100: 0,
+      });
+    } catch (error) {
+      console.error("Error adding route:", error);
+      toast.error("Failed to add route. Please try again.");
+    }
+  }, [addFormData, data]);
 
   const columns = React.useMemo<ColumnDef<TariffRoute>[]>(
     () => [
@@ -573,7 +652,10 @@ export default function TariffsPage() {
               <span className="hidden sm:inline">{currentGasPrice ? "Update Gas Price" : "Set Gas Price"}</span>
               <span className="sm:hidden">Gas Price</span>
             </Button>
-            <Button className="flex items-center justify-center gap-2 w-full sm:w-auto">
+            <Button 
+              className="flex items-center justify-center gap-2 w-full sm:w-auto"
+              onClick={() => setAddDialogOpen(true)}
+            >
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Add New Route</span>
               <span className="sm:hidden">Add Route</span>
@@ -742,6 +824,167 @@ export default function TariffsPage() {
             </Button>
             <Button onClick={handleSaveEdit} className="w-full sm:w-auto">
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Route Dialog */}
+      <Dialog 
+        open={addDialogOpen} 
+        onOpenChange={(open) => {
+          setAddDialogOpen(open);
+          if (!open) {
+            // Reset form when dialog closes
+            setAddFormData({
+              from: "",
+              to: "",
+              rate_40_50: 0,
+              rate_50_70: 0,
+              rate_70_90: 0,
+              rate_90_100: 0,
+            });
+          }
+        }}
+      >
+        <DialogContent className="w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">Add New Route</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
+              Create a new tariff route with fare rates for different gas price ranges
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 sm:space-y-4 py-2 sm:py-4">
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="from" className="text-sm">Origin Location</Label>
+              <Input
+                id="from"
+                type="text"
+                placeholder="e.g., Barangay Hall"
+                className="text-sm sm:text-base"
+                value={addFormData.from}
+                onChange={(e) => {
+                  setAddFormData({
+                    ...addFormData,
+                    from: e.target.value,
+                  });
+                }}
+              />
+            </div>
+
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="to" className="text-sm">Destination Location</Label>
+              <Input
+                id="to"
+                type="text"
+                placeholder="e.g., City Market"
+                className="text-sm sm:text-base"
+                value={addFormData.to}
+                onChange={(e) => {
+                  setAddFormData({
+                    ...addFormData,
+                    to: e.target.value,
+                  });
+                }}
+              />
+            </div>
+
+            <div className="border-t pt-3 sm:pt-4 space-y-3 sm:space-y-4">
+              <p className="text-sm font-medium text-muted-foreground">Fare Rates by Gas Price Range</p>
+              
+              <div className="space-y-1.5 sm:space-y-2">
+                <Label htmlFor="add_rate_40_50" className="text-sm">Gas ₱40-49.99 Fare Rate</Label>
+                <Input
+                  id="add_rate_40_50"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  className="text-sm sm:text-base"
+                  value={addFormData.rate_40_50 || ""}
+                  onChange={(e) => {
+                    const val = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                    setAddFormData({
+                      ...addFormData,
+                      rate_40_50: isNaN(val) ? 0 : val,
+                    });
+                  }}
+                />
+              </div>
+
+              <div className="space-y-1.5 sm:space-y-2">
+                <Label htmlFor="add_rate_50_70" className="text-sm">Gas ₱50-69.99 Fare Rate</Label>
+                <Input
+                  id="add_rate_50_70"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  className="text-sm sm:text-base"
+                  value={addFormData.rate_50_70 || ""}
+                  onChange={(e) => {
+                    const val = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                    setAddFormData({
+                      ...addFormData,
+                      rate_50_70: isNaN(val) ? 0 : val,
+                    });
+                  }}
+                />
+              </div>
+
+              <div className="space-y-1.5 sm:space-y-2">
+                <Label htmlFor="add_rate_70_90" className="text-sm">Gas ₱70-89.99 Fare Rate</Label>
+                <Input
+                  id="add_rate_70_90"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  className="text-sm sm:text-base"
+                  value={addFormData.rate_70_90 || ""}
+                  onChange={(e) => {
+                    const val = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                    setAddFormData({
+                      ...addFormData,
+                      rate_70_90: isNaN(val) ? 0 : val,
+                    });
+                  }}
+                />
+              </div>
+
+              <div className="space-y-1.5 sm:space-y-2">
+                <Label htmlFor="add_rate_90_100" className="text-sm">Gas ₱90-99.99 Fare Rate</Label>
+                <Input
+                  id="add_rate_90_100"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  className="text-sm sm:text-base"
+                  value={addFormData.rate_90_100 || ""}
+                  onChange={(e) => {
+                    const val = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                    setAddFormData({
+                      ...addFormData,
+                      rate_90_100: isNaN(val) ? 0 : val,
+                    });
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => setAddDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleAddRoute} className="w-full sm:w-auto">
+              Add Route
             </Button>
           </DialogFooter>
         </DialogContent>

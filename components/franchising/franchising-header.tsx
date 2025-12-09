@@ -14,7 +14,6 @@ export default function Header() {
     { label: "Home", href: "/franchising" },
     { label: "Vehicles", href: "/franchising/vehicles" },
     { label: "Operators", href: "/franchising/operators" },
-    { label: "Drivers", href: "/franchising/drivers" },
     { label: "Tariffs", href: "/franchising/tariffs" },
     /* { label: "Scanner", href: "/franchising/scanner" }, */
     /* { label: "Profile", href: "/franchising/profile" }, */
