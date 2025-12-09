@@ -161,23 +161,7 @@ export function RegisterForm() {
                 <Label htmlFor="r2">Driver</Label>
               </div>
               <div className="flex items-center gap-3">
-                <RadioGroupItem value="franchising" id="r3" />
-                <Label htmlFor="r3">Franchising</Label>
-              </div>
-              <div className="flex items-center gap-3">
-                <RadioGroupItem value="admin" id="r4" />
-                <Label htmlFor="r3">Admin</Label>
-              </div>
-              <div className="flex items-center gap-3">
-                <RadioGroupItem value="police" id="r5" />
-                <Label htmlFor="r3">Police</Label>
-              </div>
-              <div className="flex items-center gap-3">
-                <RadioGroupItem value="cttmo" id="r6" />
-                <Label htmlFor="r3">CTTMO</Label>
-              </div>
-              <div className="flex items-center gap-3">
-                <RadioGroupItem value="operator" id="r7" />
+                <RadioGroupItem value="operator" id="r3" />
                 <Label htmlFor="r3">Operator</Label>
               </div>
             </RadioGroup>
