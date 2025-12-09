@@ -14,7 +14,7 @@ export default function Header() {
   const navigationLinks = [
     { label: "Driver Listing", href: "/admin/drivers" },
     { label: "Tariffs", href: "/admin/tariffs" },
-    { label: "SOS Requests", href: "/admin/sos" },
+    // { label: "SOS Requests", href: "/admin/sos" },
     { label: "QR Scanner", href: "/admin/qrscanner" },
     { label: "Complaints", href: "/admin/complaints" },
     { label: "Reports", href: "/admin/reports" },
