@@ -40,7 +40,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import tariffData from "@/tariff.json";
-import Header from "@/components/admin/admin-header";
+import Header from "@/components/franchising/franchising-header";
 import { toast } from "react-toastify";
 import { getGasPriceRange } from "@/lib/tariff-utils";
 import { Fuel } from "lucide-react";
