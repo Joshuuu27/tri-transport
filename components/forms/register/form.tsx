@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Mail, Lock, User, Store } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { showToast } from "@/components/common/Toast";
@@ -112,6 +112,13 @@ export function RegisterForm() {
         actionLabel: "Dismiss",
       });
 
+      // Redirect based on role
+      const redirectPath = 
+        role === "driver" ? "/driver" :
+        role === "operator" ? "/operator" :
+        "/user/commuter";
+      
+      router.push(redirectPath);
       router.refresh();
     } catch (error: any) {
       const message =
