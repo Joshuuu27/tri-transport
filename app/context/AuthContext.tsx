@@ -22,7 +22,7 @@ const auth = getAuth(app);
 // Define the context type
 interface AuthContextType {
   user: User | null;
-  role: "user" | "driver" | "admin" | "franchising" | "police" | "cttmo" | "operator" | null;
+  role: "user" | "driver" | "admin" | "franchising" | "police" | "police_head" | "cttmo" | "operator" | null;
 }
 
 // Create AuthContext with proper type
@@ -51,7 +51,7 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<
-    "user" | "driver" | "admin" | "franchising" | "police" | "cttmo" | "operator" | null
+    "user" | "driver" | "admin" | "franchising" | "police" | "police_head" | "cttmo" | "operator" | null
   >(null);
 
   // Listen for changes in the user's sign-in state
@@ -69,6 +69,7 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({
           | "user"
           | "franchising"
           | "police"
+          | "police_head"
           | "cttmo"
           | "operator"
           | undefined;

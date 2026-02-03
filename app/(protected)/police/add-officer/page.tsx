@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Mail, Lock, User, Shield } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Shield, AlertCircle } from "lucide-react";
 import { toast } from "react-toastify";
 import Header from "@/components/police/police-header";
 import { LoadingScreen } from "@/components/common/loading-component";
+import { useRouter } from "next/navigation";
 
 export default function AddOfficerPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -15,6 +16,29 @@ export default function AddOfficerPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isPoliceHead, setIsPoliceHead] = useState(false);
+  const [isCheckingRole, setIsCheckingRole] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check if current user is police head
+    fetch("/api/police/current-user")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.isPoliceHead) {
+          setIsPoliceHead(true);
+        } else {
+          toast.error("Only the police head can add new officers.");
+          router.push("/police");
+        }
+        setIsCheckingRole(false);
+      })
+      .catch(() => {
+        toast.error("Failed to verify permissions.");
+        router.push("/police");
+        setIsCheckingRole(false);
+      });
+  }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -69,6 +93,32 @@ export default function AddOfficerPage() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  if (isCheckingRole) {
+    return (
+      <>
+        <Header />
+        <LoadingScreen />
+      </>
+    );
+  }
+
+  if (!isPoliceHead) {
+    return (
+      <>
+        <Header />
+        <div className="max-w-2xl mx-auto px-6 py-8 w-full">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-red-900 mb-2">Access Denied</h2>
+            <p className="text-red-700">
+              Only the police head can add new police officers.
+            </p>
+          </div>
+        </div>
+      </>
+    );
   }
 
   return (

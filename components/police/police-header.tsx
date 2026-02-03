@@ -2,7 +2,7 @@
 
 import { LogOut, Menu, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import authService from "@/lib/services/AuthService";
 import { handleLogout } from "@/lib/auth/logout";
@@ -11,13 +11,37 @@ import { useSOSAlertContext } from "@/app/context/SOSAlertContext";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isPoliceHead, setIsPoliceHead] = useState(false);
+  const [isLoadingRole, setIsLoadingRole] = useState(true);
   const { hasNewAlert } = useSOSAlertContext();
 
-  const navigationLinks = [
+  useEffect(() => {
+    // Check if current user is police head
+    fetch("/api/police/current-user")
+      .then((res) => res.json())
+      .then((data) => {
+        setIsPoliceHead(data.isPoliceHead || false);
+        setIsLoadingRole(false);
+      })
+      .catch(() => {
+        setIsPoliceHead(false);
+        setIsLoadingRole(false);
+      });
+  }, []);
+
+  const baseLinks = [
     { label: "Home", href: "/police" },
     { label: "SOS Alerts", href: "/police/sos-alerts", isSOS: true },
-     { label: "Map", href: "/police/map" }, 
-    { label: "Add Officer", href: "/police/add-officer" },
+    { label: "Map", href: "/police/map" },
+  ];
+
+  const policeHeadLinks = isPoliceHead
+    ? [{ label: "Add Officer", href: "/police/add-officer" }]
+    : [];
+
+  const navigationLinks = [
+    ...baseLinks,
+    ...policeHeadLinks,
     { label: "Settings", href: "/police/settings" },
   ];
 
