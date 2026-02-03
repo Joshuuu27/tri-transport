@@ -12,7 +12,7 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navigationLinks = [
-    { label: "Driver Listing", href: "/admin/drivers" },
+    { label: "Driver Listing", href: "/admin" },
     { label: "Tariffs", href: "/admin/tariffs" },
     // { label: "SOS Requests", href: "/admin/sos" },
     { label: "QR Scanner", href: "/admin/qrscanner" },
@@ -88,7 +88,7 @@ export default function Header() {
                 </Button>
               </Link>
             ))}
-                       {/* Mobile Logout */}
+            {/* Mobile Logout */}
             <Button
               variant="destructive"
               className="w-full justify-start mt-2 flex items-center gap-2"

@@ -4,7 +4,7 @@ import { SESSION_COOKIE_NAME } from "@/constant";
 
 export async function POST(req: Request) {
   try {
-    // Verify the requester is a police officer
+    // Verify the requester is an admin
     const cookieHeader = req.headers.get("cookie") || "";
     const cookie = cookieHeader
       .split("; ")
@@ -21,19 +21,27 @@ export async function POST(req: Request) {
     const userDoc = await db.collection("users").doc(decoded.uid).get();
     const role = userDoc.data()?.role;
 
-    // Only police_head can create new police accounts
-    if (role !== "police_head") {
+    if (role !== "admin") {
       return NextResponse.json(
-        { error: "Only the police head can create new police officer accounts" },
+        { error: "Only admins can create users" },
         { status: 403 }
       );
     }
 
-    const { email, password, name } = await req.json();
+    const { email, password, name, userRole } = await req.json();
 
-    if (!email || !password || !name) {
+    if (!email || !password || !name || !userRole) {
       return NextResponse.json(
-        { error: "Missing required fields: email, password, name" },
+        { error: "Missing required fields: email, password, name, userRole" },
+        { status: 400 }
+      );
+    }
+
+    // Validate role
+    const allowedRoles = ["franchising", "cttmo", "police", "police_head", "operator", "driver", "user"];
+    if (!allowedRoles.includes(userRole)) {
+      return NextResponse.json(
+        { error: `Invalid role. Allowed roles: ${allowedRoles.join(", ")}` },
         { status: 400 }
       );
     }
@@ -69,6 +77,21 @@ export async function POST(req: Request) {
       }
     }
 
+    // Special handling for police_head - ensure only one exists
+    if (userRole === "police_head") {
+      const existingHeads = await db
+        .collection("users")
+        .where("role", "==", "police_head")
+        .get();
+      
+      if (!existingHeads.empty) {
+        return NextResponse.json(
+          { error: "A police head already exists. Please reassign the existing police head first." },
+          { status: 400 }
+        );
+      }
+    }
+
     // Create user in Firebase Auth
     const userRecord = await adminAuth.createUser({
       email,
@@ -76,27 +99,27 @@ export async function POST(req: Request) {
       displayName: name,
     });
 
-    // Save user profile to Firestore with police role
+    // Save user profile to Firestore
     await db.collection("users").doc(userRecord.uid).set({
       email,
       name,
-      role: "police",
+      role: userRole,
       createdAt: Date.now(),
       createdBy: decoded.uid, // Track who created this account
     });
 
     // Set custom claims
-    await adminAuth.setCustomUserClaims(userRecord.uid, { role: "police" });
+    await adminAuth.setCustomUserClaims(userRecord.uid, { role: userRole });
 
     return NextResponse.json({
       success: true,
       uid: userRecord.uid,
-      message: "Police officer account created successfully",
+      message: "User created successfully",
     });
   } catch (error: any) {
-    console.error("Error creating police officer:", error);
+    console.error("Error creating user:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to create police officer account" },
+      { error: error.message || "Failed to create user" },
       { status: 400 }
     );
   }
