@@ -47,6 +47,7 @@ export async function middleware(req: NextRequest) {
       else if (role === "franchising") url.pathname = "/franchising";
       else if (role === "cttmo") url.pathname = "/cttmo";
       else if (role === "operator") url.pathname = "/operator";
+      else if (role === "police" || role === "police_head") url.pathname = "/police";
       else url.pathname = "/user";
       return NextResponse.redirect(url);
     }
@@ -83,7 +84,7 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    if (path.startsWith("/police") && role !== "police") {
+    if (path.startsWith("/police") && role !== "police" && role !== "police_head") {
       url.pathname = "/unauthorized";
       return NextResponse.redirect(url);
     }
