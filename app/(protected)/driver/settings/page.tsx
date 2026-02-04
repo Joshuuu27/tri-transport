@@ -9,9 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "react-toastify";
-import { Lock, User, Mail, Phone, FileText } from "lucide-react";
+import { Lock, User, Mail, Phone, FileText, Upload, X } from "lucide-react";
 import { Loader } from "lucide-react";
 import { getDriverLicense, setDriverLicense } from "@/lib/services/DriverLicenseService";
+import Image from "next/image";
 
 interface AccountFormData {
   displayName: string;
@@ -54,6 +55,13 @@ const DriverSettingsPage = () => {
     issueDate: "",
     expiryDate: "",
   });
+
+  // License image upload state
+  const [licenseImage, setLicenseImage] = useState<File | null>(null);
+  const [licenseImagePreview, setLicenseImagePreview] = useState<string | null>(null);
+  const [isProcessingOCR, setIsProcessingOCR] = useState(false);
+  const [ocrDebugText, setOcrDebugText] = useState<string | null>(null);
+  const [showOcrDebug, setShowOcrDebug] = useState(false);
 
   // Load existing license data on mount
   useEffect(() => {
@@ -102,6 +110,231 @@ const DriverSettingsPage = () => {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image size must be less than 10MB");
+      return;
+    }
+
+    setLicenseImage(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setLicenseImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Automatically extract license number after image is loaded
+    // Small delay to ensure preview is ready
+    setTimeout(() => {
+      handleExtractLicenseNumber(file);
+    }, 500);
+  };
+
+  const removeImage = () => {
+    setLicenseImage(null);
+    setLicenseImagePreview(null);
+    setOcrDebugText(null);
+    setShowOcrDebug(false);
+  };
+
+  const handleExtractLicenseNumber = async (imageFile?: File) => {
+    const fileToProcess = imageFile || licenseImage;
+    if (!fileToProcess) {
+      return;
+    }
+
+    setIsProcessingOCR(true);
+    try {
+      // Use Tesseract.js for OCR (client-side)
+      const { createWorker } = await import("tesseract.js");
+      
+      toast.info("Processing image and detecting license number...");
+      
+      const worker = await createWorker("eng");
+      
+      // Configure OCR for better accuracy with Philippine license format
+      await worker.setParameters({
+        tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-/:",
+        tessedit_pageseg_mode: "6", // Assume uniform block of text
+        preserve_interword_spaces: "1",
+      });
+
+      // Perform OCR with better configuration
+      const { data: { text, words } } = await worker.recognize(fileToProcess, {
+        rectangle: undefined, // Process entire image
+      });
+      
+      await worker.terminate();
+
+      console.log("OCR Full Text:", text);
+      console.log("OCR Words:", words);
+
+      let extractedLicenseNumber = "";
+
+      // Method 1: Look for "License No." or "License Number" pattern
+      const licenseLabelPattern = /license\s*no\.?\s*:?\s*([A-Z0-9\-]{6,20})/gi;
+      const labelMatch = text.match(licenseLabelPattern);
+      if (labelMatch) {
+        const match = labelMatch[0];
+        const numberMatch = match.match(/([A-Z0-9\-]{6,20})/i);
+        if (numberMatch) {
+          extractedLicenseNumber = numberMatch[1].toUpperCase().trim();
+        }
+      }
+
+      // Method 2: Philippine license format (e.g., N03-12-123456, A01-23-456789)
+      // Pattern: Letter(s) followed by numbers with dashes or spaces
+      // Handle OCR variations: O might be read as 0, I as 1, etc.
+      if (!extractedLicenseNumber) {
+        // More flexible pattern: 1-3 letters, then 2 digits, dash/space, 2 digits, dash/space, 4-8 digits
+        const phLicensePattern = /([A-Z]{1,3}[0O1I]?[\s\-]?[0-9O]{1,2}[\s\-]?[0-9O]{1,2}[\s\-]?[0-9O]{4,8})/gi;
+        const phMatches = text.match(phLicensePattern);
+        if (phMatches && phMatches.length > 0) {
+          // Sort by length and position (prefer longer matches)
+          const sortedMatches = phMatches.sort((a, b) => {
+            // Prefer matches that are around 13-15 characters (typical license length)
+            const aLen = a.replace(/[\s\-]/g, "").length;
+            const bLen = b.replace(/[\s\-]/g, "").length;
+            if (Math.abs(aLen - 13) < Math.abs(bLen - 13)) return -1;
+            if (Math.abs(aLen - 13) > Math.abs(bLen - 13)) return 1;
+            return b.length - a.length;
+          });
+          
+          // Clean up the best match
+          extractedLicenseNumber = sortedMatches[0]
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-")
+            .toUpperCase()
+            .trim();
+        }
+      }
+
+      // Method 3: Look for lines that contain license-like patterns
+      if (!extractedLicenseNumber) {
+        const lines = text.split("\n").map((line) => line.trim()).filter((line) => line.length > 0);
+        for (const line of lines) {
+          // Check if line looks like a license number
+          // Format: Letter(s) + numbers with optional dashes
+          // Also check for lines that start with license number pattern
+          const linePattern = /([A-Z]{1,3}[0O1I]?[\s\-]?[0-9O]{1,2}[\s\-]?[0-9O]{1,2}[\s\-]?[0-9O]{4,8})/i;
+          const lineMatch = line.match(linePattern);
+          if (lineMatch) {
+            const candidate = lineMatch[1]
+              .replace(/\s+/g, "-")
+              .replace(/-+/g, "-")
+              .toUpperCase()
+              .trim();
+            
+            // Validate it looks like a license number (total length after cleaning)
+            const cleanLength = candidate.replace(/[^A-Z0-9]/g, "").length;
+            if (cleanLength >= 10 && cleanLength <= 15) {
+              extractedLicenseNumber = candidate;
+              break;
+            }
+          }
+        }
+      }
+
+      // Method 4: Look in words array for license-like patterns
+      if (!extractedLicenseNumber && words) {
+        // Try to combine consecutive words that might form a license number
+        const candidates: string[] = [];
+        
+        for (let i = 0; i < words.length; i++) {
+          const word = words[i];
+          const wordText = word.text.toUpperCase().replace(/[^A-Z0-9\-]/g, "");
+          
+          // Check if single word matches
+          if (/^[A-Z]{1,3}[\-]?[0-9]{2}[\-]?[0-9]{2}[\-]?[0-9]{4,8}$/.test(wordText)) {
+            candidates.push(wordText);
+          }
+          
+          // Try combining with next 1-2 words
+          if (i < words.length - 1) {
+            const combined = (wordText + words[i + 1].text.toUpperCase().replace(/[^A-Z0-9\-]/g, "")).replace(/[^A-Z0-9\-]/g, "");
+            if (/^[A-Z]{1,3}[\-]?[0-9]{2}[\-]?[0-9]{2}[\-]?[0-9]{4,8}$/.test(combined)) {
+              candidates.push(combined);
+            }
+          }
+        }
+        
+        if (candidates.length > 0) {
+          // Prefer candidates that are closest to typical license length (13 chars without dashes)
+          extractedLicenseNumber = candidates.sort((a, b) => {
+            const aLen = a.replace(/[^A-Z0-9]/g, "").length;
+            const bLen = b.replace(/[^A-Z0-9]/g, "").length;
+            return Math.abs(aLen - 13) - Math.abs(bLen - 13);
+          })[0];
+        }
+      }
+
+      // Method 5: Fallback - find any alphanumeric string with dashes that looks like a license
+      if (!extractedLicenseNumber) {
+        const fallbackPattern = /([A-Z0-9]{1,3}[\s\-][0-9]{2}[\s\-][0-9]{2}[\s\-][0-9]{4,8})/gi;
+        const fallbackMatches = text.match(fallbackPattern);
+        if (fallbackMatches && fallbackMatches.length > 0) {
+          extractedLicenseNumber = fallbackMatches[0]
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-")
+            .toUpperCase()
+            .trim();
+        }
+      }
+
+      // Clean up the extracted license number
+      if (extractedLicenseNumber) {
+        // Normalize dashes and spaces
+        // Fix common OCR mistakes: O -> 0, I -> 1 (but only in number positions)
+        extractedLicenseNumber = extractedLicenseNumber
+          .replace(/\s+/g, "-")
+          .replace(/-+/g, "-")
+          .toUpperCase()
+          .trim();
+        
+        // Fix common OCR errors in license numbers
+        // Replace O with 0 in positions that should be numbers (after first letter(s))
+        const parts = extractedLicenseNumber.split("-");
+        if (parts.length >= 2) {
+          // Fix O -> 0 in number parts
+          for (let i = 1; i < parts.length; i++) {
+            parts[i] = parts[i].replace(/O/g, "0").replace(/I/g, "1");
+          }
+          extractedLicenseNumber = parts.join("-");
+        }
+        
+        setLicenseData((prev) => ({
+          ...prev,
+          licenseNumber: extractedLicenseNumber,
+        }));
+        toast.success(`License number detected: ${extractedLicenseNumber}`);
+      } else {
+        // Store OCR text for debugging
+        setOcrDebugText(text);
+        setShowOcrDebug(true);
+        console.log("Could not extract license number. Full OCR text:", text);
+        console.log("OCR Words:", words?.map(w => w.text).join(" | "));
+        toast.warning("Could not automatically detect license number. Check the OCR output below and enter it manually.");
+      }
+    } catch (error: any) {
+      console.error("OCR Error:", error);
+      toast.error("Failed to process image. Please enter license number manually.");
+    } finally {
+      setIsProcessingOCR(false);
+    }
   };
 
   const handleUpdateLicense = async (e: React.FormEvent) => {
@@ -476,6 +709,72 @@ const DriverSettingsPage = () => {
                   </CardHeader>
                   <CardContent>
                     <form onSubmit={handleUpdateLicense} className="space-y-6">
+                      {/* License Image Upload */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <Upload className="w-4 h-4 text-gray-600" />
+                          Upload Driver's License Image
+                        </Label>
+                        <div className="space-y-3">
+                          {!licenseImagePreview ? (
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                className="hidden"
+                                id="licenseImageUpload"
+                              />
+                              <label
+                                htmlFor="licenseImageUpload"
+                                className="cursor-pointer flex flex-col items-center gap-2"
+                              >
+                                <Upload className="w-8 h-8 text-gray-400" />
+                                <span className="text-sm text-gray-600">
+                                  Click to upload or drag and drop
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  PNG, JPG, JPEG up to 10MB
+                                </span>
+                              </label>
+                            </div>
+                          ) : (
+                            <div className="relative">
+                              <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                                <div className="relative w-full h-48 mb-3 rounded overflow-hidden bg-white">
+                                  <Image
+                                    src={licenseImagePreview}
+                                    alt="License preview"
+                                    fill
+                                    className="object-contain"
+                                  />
+                                </div>
+                                <div className="flex gap-2">
+                                  {isProcessingOCR && (
+                                    <div className="flex-1 flex items-center justify-center p-2 bg-blue-50 rounded border border-blue-200">
+                                      <Loader className="w-4 h-4 mr-2 animate-spin text-blue-600" />
+                                      <span className="text-sm text-blue-700">Detecting license number...</span>
+                                    </div>
+                                  )}
+                                  <Button
+                                    type="button"
+                                    onClick={removeImage}
+                                    variant="outline"
+                                    size="icon"
+                                    disabled={isProcessingOCR}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Upload a clear image of your driver's license. The license number will be automatically detected.
+                        </p>
+                      </div>
+
                       {/* License Number */}
                       <div className="space-y-2">
                         <Label htmlFor="licenseNumber" className="flex items-center gap-2">
@@ -488,13 +787,43 @@ const DriverSettingsPage = () => {
                           type="text"
                           value={licenseData.licenseNumber}
                           onChange={handleLicenseChange}
-                          placeholder="Enter your license number"
+                          placeholder="Enter your license number or extract from image"
                           className="border-gray-200"
                         />
                         <p className="text-xs text-gray-500">
-                          Your official driver's license number
+                          Your official driver's license number (will be auto-filled if extracted from image)
                         </p>
                       </div>
+
+                      {/* OCR Debug Output */}
+                      {showOcrDebug && ocrDebugText && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-medium text-gray-700">
+                              OCR Extracted Text (for reference)
+                            </Label>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setShowOcrDebug(false);
+                                setOcrDebugText(null);
+                              }}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
+                            <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
+                              {ocrDebugText}
+                            </pre>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            If the license number wasn't detected automatically, look for it in the text above and enter it manually.
+                          </p>
+                        </div>
+                      )}
 
                       {/* Issue Date */}
                       <div className="space-y-2">
